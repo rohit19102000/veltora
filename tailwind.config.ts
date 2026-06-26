@@ -11,6 +11,13 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        'veltora-gold': "var(--veltora-gold)",
+        'veltora-gold-light': "var(--veltora-gold-light)",
+        'veltora-obsidian': "var(--veltora-obsidian)",
+        'veltora-charcoal': "var(--veltora-charcoal)",
+        'veltora-steel': "var(--veltora-steel)",
+        'veltora-cream': "var(--veltora-cream)",
+        'veltora-titanium': "var(--veltora-titanium)",
       },
     },
   },

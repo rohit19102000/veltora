@@ -1,27 +1,295 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300&family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --veltora-gold: #cfa240;
+  --veltora-gold-light: #f3e5ab;
+  --veltora-obsidian: #080708;
+  --veltora-charcoal: #131112;
+  --veltora-steel: #8A8E96;
+  --veltora-cream: #fcfbf8;
+  --veltora-titanium: #C4C6CB;
+  
+  --font-display: 'Cormorant Garamond', 'Optima', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  --background: var(--veltora-obsidian);
+  --foreground: var(--veltora-cream);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--veltora-obsidian);
+  color: var(--veltora-cream);
+  font-family: var(--font-body);
+  overflow-x: clip;
+  cursor: none; /* Hide default cursor to enable custom lagging cursor */
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+/* Hide cursor on mobile/touch devices */
+@media (hover: none) {
+  body {
+    cursor: auto;
+  }
+  .custom-cursor {
+    display: none !important;
   }
 }
+
+/* Typographic Defaults */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--veltora-cream);
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--veltora-obsidian);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--veltora-gold);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--veltora-gold-light);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--veltora-obsidian);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--veltora-charcoal);
+  border: 2px solid var(--veltora-obsidian);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--veltora-gold);
+}
+
+/* Custom Cursor class */
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--veltora-gold);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s, background-color 0.3s, border-color 0.3s;
+}
+
+.custom-cursor.hover-cta {
+  width: 28px;
+  height: 28px;
+  background-color: var(--veltora-gold);
+  border-color: var(--veltora-gold-light);
+}
+
+.custom-cursor.hover-card {
+  width: 48px;
+  height: 48px;
+  border-color: var(--veltora-gold-light);
+}
+
+.custom-cursor.click {
+  width: 14px;
+  height: 14px;
+  background-color: var(--veltora-gold-light);
+}
+
+/* Metronome Ticking Keyframes */
+@keyframes tick-metronome {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+.metronome-pulse {
+  animation: tick-metronome 0.36s ease-in-out infinite;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(20, 20, 22, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(184, 161, 106, 0.1);
+}
+
+/* SVG Line Drawing */
+.draw-svg {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawLine 2s ease-in-out forwards;
+}
+
+@keyframes drawLine {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Keyframe animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Metronome Tick Sound indicator node */
+.pulse-gold {
+  box-shadow: 0 0 0 0 rgba(184, 161, 106, 0.5);
+  animation: pulse-ring 1.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(184, 161, 106, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(184, 161, 106, 0);
+  }
+}
+
+/* Caliber Oscillation */
+@keyframes oscillate-balance {
+  0%, 100% { transform: rotate(-35deg); }
+  50% { transform: rotate(35deg); }
+}
+.animate-balance {
+  animation: oscillate-balance 0.6s ease-in-out infinite;
+}
+
+/* Word Reveal Animation */
+@keyframes reveal-word {
+  0% {
+    opacity: 0.08;
+    filter: blur(2px);
+    transform: translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translateY(0);
+  }
+}
+.animate-reveal-word {
+  animation-name: reveal-word;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 3D Card Flip Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+.group:hover .group-hover\:rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Reviews Float-Tilt Animation */
+@keyframes float-tilt {
+  0%, 100% {
+    transform: perspective(1000px) rotateX(6deg) rotateY(-12deg) rotate(-2deg) translateY(0);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(5deg) rotateY(-10deg) rotate(-1.5deg) translateY(-12px);
+  }
+}
+.animate-float-tilt {
+  animation: float-tilt 6s ease-in-out infinite;
+}
+
+/* Vertical Marquee Animations */
+@keyframes scrollUp {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.animate-marquee-vertical {
+  animation: scrollUp 35s linear infinite;
+}
+
+.animate-marquee-vertical-fast {
+  animation: scrollUp 28s linear infinite;
+}
+
+.animate-marquee-vertical-slow {
+  animation: scrollUp 45s linear infinite;
+}
+
+.animate-marquee-vertical:hover,
+.animate-marquee-vertical-fast:hover,
+.animate-marquee-vertical-slow:hover {
+  animation-play-state: paused;
+}
+
+/* Sweep Second Hand Animation for Loader */
+@keyframes sweepSecond {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-sweep-second {
+  animation: sweepSecond 3.6s linear infinite;
+}
+
+
