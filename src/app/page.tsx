@@ -92,7 +92,18 @@ export default function HomePage() {
   const [filteredShowrooms, setFilteredShowrooms] = useState(allShowrooms);
   const [deliveryZip, setDeliveryZip] = useState('');
   const [deliveryResult, setDeliveryResult] = useState<{ checked: boolean; deliverable: boolean; dateString?: string } | null>(null);
+  const [flippedProductId, setFlippedProductId] = useState<number | null>(null);
   const [conciergeProgress, setConciergeProgress] = useState(0); // 0 -> 1 scroll progress for showrooms/delivery section
+
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Heritage Timeline Active Image index
   const heritageImages = {
@@ -885,7 +896,7 @@ export default function HomePage() {
       </section>
 
       {/* SECTION 03 — CRAFTSMANSHIP REVEAL */}
-      <section id="craftsmanship" ref={craftsmanshipRef} className="relative w-full h-[250vh] bg-black">
+      <section id="craftsmanship" ref={craftsmanshipRef} className="relative w-full h-[500vh] bg-black">
         {/* Sticky viewport */}
         <div className="sticky top-0 w-full h-screen flex flex-col justify-between overflow-hidden py-24 bg-black">
           {/* Ambient background gold glow to simulate lens flare */}
@@ -1022,34 +1033,55 @@ export default function HomePage() {
           </div>
 
           {/* Material panels sliding in from right */}
-          <div className="absolute right-6 sm:right-12 top-1/2 transform -translate-y-1/2 w-80 space-y-4 z-20 pointer-events-auto">
-            {[
-              { id: 'crystal', label: 'Sapphire Crystal', img: '/assets/macro_crystal.png', activePct: 0.08 },
-              { id: 'dial', label: 'Guilloche Dial', img: '/assets/macro_dial.png', activePct: 0.22 },
-              { id: 'case', label: 'Titanium Case', img: '/assets/macro_case.png', activePct: 0.38 },
-              { id: 'markers', label: 'Blued Steel Markers', img: '/assets/macro_markers.png', activePct: 0.54 }
-            ].map((panel, idx) => (
-              <div 
-                key={panel.id}
-                className={`transition-all duration-300 transform p-4 rounded-xl flex items-center gap-4 border ${
-                  craftScrollProgress >= panel.activePct 
-                    ? 'translate-x-0 opacity-100' 
-                    : 'translate-x-[150%] opacity-0'
-                } bg-[#120e09]/30 border-veltora-gold/10 backdrop-blur-[3px] md:glass-panel md:bg-[#120e09]/90 md:border-veltora-gold/15 md:backdrop-blur-md`}
-              >
-                <div className="w-14 h-14 rounded-lg overflow-hidden border border-veltora-gold/25 relative flex-shrink-0 opacity-100">
-                  <Image src={panel.img} alt={panel.label} fill className="object-cover" />
-                </div>
-                <div className="opacity-100">
-                  <span className="text-[8px] font-mono text-veltora-gold tracking-widest uppercase font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-                    DETAIL 0{idx + 1}
-                  </span>
-                  <h4 className="text-sm font-display text-white uppercase tracking-wide font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
-                    {panel.label}
-                  </h4>
-                </div>
-              </div>
-            ))}
+          <div className="absolute right-6 sm:right-12 top-1/2 transform -translate-y-1/2 w-80 h-[240px] md:h-auto space-y-4 z-20 pointer-events-auto">
+            {(() => {
+              const panelsList = [
+                { id: 'crystal', label: 'Sapphire Crystal', img: '/assets/img2.png', activePct: 0.08 },
+                { id: 'dial', label: 'Guilloche Dial', img: '/assets/macro_dial.png', activePct: 0.22 },
+                { id: 'case', label: 'Titanium Case', img: '/assets/img1.png', activePct: 0.38 },
+                { id: 'markers', label: 'Blued Steel Markers', img: '/assets/img4.png', activePct: 0.54 }
+              ];
+
+              // Find active index for mobile layout (only latest active card is visible)
+              let activeIdxMobile = -1;
+              for (let i = 0; i < panelsList.length; i++) {
+                if (craftScrollProgress >= panelsList[i].activePct) {
+                  activeIdxMobile = i;
+                }
+              }
+
+              return panelsList.map((panel, idx) => {
+                const desktopVisible = craftScrollProgress >= panel.activePct;
+                const mobileVisible = activeIdxMobile === idx;
+
+                return (
+                  <div 
+                    key={panel.id}
+                    className={`transition-all duration-300 transform p-4 rounded-xl flex items-center gap-4 border-none bg-[#120e09]/30 backdrop-blur-[3px] md:glass-panel md:bg-[#120e09]/90 md:border-none md:backdrop-blur-md absolute bottom-0 right-0 w-full md:relative md:bottom-auto md:right-auto md:w-auto ${
+                      mobileVisible 
+                        ? 'translate-x-0 opacity-100' 
+                        : 'translate-x-[150%] opacity-0 pointer-events-none'
+                    } ${
+                      desktopVisible 
+                        ? 'md:translate-x-0 md:opacity-100 md:pointer-events-auto' 
+                        : 'md:translate-x-[150%] md:opacity-0 md:pointer-events-none'
+                    }`}
+                  >
+                    <div className="w-14 h-14 rounded-lg overflow-hidden border border-veltora-gold/25 relative flex-shrink-0 opacity-100">
+                      <Image src={panel.img} alt={panel.label} fill className="object-cover" />
+                    </div>
+                    <div className="opacity-100">
+                      <span className="text-[8px] font-mono text-veltora-gold tracking-widest uppercase font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                        DETAIL 0{idx + 1}
+                      </span>
+                      <h4 className="text-sm font-display text-white uppercase tracking-wide font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                        {panel.label}
+                      </h4>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
 
           {/* Bottom horizontal scroll indicator */}
@@ -1532,53 +1564,89 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="flex gap-8">
-                  {filteredProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      className="w-[350px] h-[500px] flex-shrink-0 group perspective-1000"
-                      onPointerOver={() => { 
-                        setCursorState('hover-card'); 
-                        setCursorText('FLIP'); 
-                      }}
-                      onPointerOut={() => { 
-                        setCursorState('default'); 
-                        setCursorText(''); 
-                      }}
-                    >
-                      <div className="relative w-full h-full transition-transform duration-700 ease-out preserve-3d group-hover:rotate-y-180">
-                        
-                        {/* FRONT SIDE (Watch Card with Title floating on bottom-left) */}
-                        <div className="absolute inset-0 backface-hidden w-full h-full rounded-2xl overflow-hidden border border-[#8f6820]/35 flex flex-col z-10 group-hover:z-0">
-                          {/* Full card Image */}
-                          <div className="absolute inset-0 w-full h-full bg-[#0b0b0c] overflow-hidden">
-                            <Image 
-                              src={product.image}
-                              alt={product.modelName}
-                              fill
-                              className="object-cover"
-                            />
-                            {/* Dark gradient overlay for text readability */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent z-10" />
-                          </div>
+                  {filteredProducts.map((product) => {
+                    const isCardFlipped = flippedProductId === product.id;
+                    return (
+                      <div
+                        key={product.id}
+                        className="w-[350px] h-[500px] flex-shrink-0 group perspective-1000 cursor-pointer"
+                        onPointerOver={() => { 
+                          if (!isMobile) {
+                            setCursorState('hover-card'); 
+                            setCursorText('FLIP'); 
+                            setFlippedProductId(product.id);
+                          }
+                        }}
+                        onPointerOut={() => { 
+                          if (!isMobile) {
+                            setCursorState('default'); 
+                            setCursorText(''); 
+                            setFlippedProductId(null);
+                          }
+                        }}
+                        onClick={() => {
+                          audioController.playClick();
+                          setFlippedProductId(prev => prev === product.id ? null : product.id);
+                        }}
+                      >
+                        <div 
+                          className="relative w-full h-full preserve-3d"
+                          style={{
+                            transform: isMobile 
+                              ? 'none' 
+                              : (isCardFlipped ? 'rotateY(180deg) scale(0.96)' : 'rotateY(0deg) scale(1)'),
+                            transition: isMobile ? 'none' : 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                          }}
+                        >
+                          
+                          {/* FRONT SIDE (Watch Card with Title floating on bottom-left) */}
+                          <div 
+                            className={`absolute inset-0 backface-hidden w-full h-full rounded-2xl overflow-hidden border border-[#8f6820]/35 flex flex-col transition-all duration-300 ${isCardFlipped ? 'z-0' : 'z-10'}`}
+                            style={isMobile ? {
+                              opacity: isCardFlipped ? 0 : 1,
+                              transform: isCardFlipped ? 'scale(0.93)' : 'scale(1)',
+                              transition: 'opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
+                              pointerEvents: isCardFlipped ? 'none' : 'auto'
+                            } : undefined}
+                          >
+                            {/* Full card Image */}
+                            <div className="absolute inset-0 w-full h-full bg-[#0b0b0c] overflow-hidden">
+                              <Image 
+                                src={product.image}
+                                alt={product.modelName}
+                                fill
+                                className="object-cover"
+                              />
+                              {/* Dark gradient overlay for text readability */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent z-10" />
+                            </div>
 
-                          {/* Floating Badge (top-left) */}
-                          <span className="absolute top-4 left-4 z-20 bg-veltora-obsidian/75 border border-[#8f6820]/45 rounded-full px-3 py-1 text-[8px] font-mono text-veltora-gold uppercase tracking-wider">
-                            {product.tier}
-                          </span>
-
-                          {/* Details - Floating bottom-left */}
-                          <div className="absolute bottom-6 left-6 right-6 z-20 space-y-1">
-                            <span className="text-[9px] font-mono text-veltora-gold/80 tracking-wider uppercase font-semibold">
+                            {/* Floating Badge (top-left) */}
+                            <span className="absolute top-4 left-4 z-20 bg-veltora-obsidian/75 border border-[#8f6820]/45 rounded-full px-3 py-1 text-[8px] font-mono text-veltora-gold uppercase tracking-wider">
                               {product.tier}
                             </span>
-                            <h4 className="text-2xl font-display text-veltora-cream uppercase tracking-wider font-bold">
-                              {product.modelName}
-                            </h4>
-                          </div>
-                        </div>
 
-                        {/* BACK SIDE (Flipped, Dark Golden Background) */}
-                        <div className="absolute inset-0 backface-hidden rotate-y-180 w-full h-full rounded-2xl overflow-hidden bg-[#1c1305]/95 border border-[#8f6820]/45 flex flex-col justify-between p-8 shadow-2xl z-0 group-hover:z-20">
+                            {/* Details - Floating bottom-left */}
+                            <div className="absolute bottom-6 left-6 right-6 z-20 space-y-1">
+                              <span className="text-[9px] font-mono text-veltora-gold/80 tracking-wider uppercase font-semibold">
+                                {product.tier}
+                              </span>
+                              <h4 className="text-2xl font-display text-veltora-cream uppercase tracking-wider font-bold">
+                                {product.modelName}
+                              </h4>
+                            </div>
+                          </div>
+
+                          {/* BACK SIDE (Flipped, Dark Golden Background) */}
+                          <div 
+                            className={`absolute inset-0 backface-hidden rotate-y-180 w-full h-full rounded-2xl overflow-hidden bg-[#1c1305]/95 border border-[#8f6820]/45 flex flex-col justify-between p-8 shadow-2xl transition-all duration-300 ${isCardFlipped ? 'z-20' : 'z-0'}`}
+                            style={isMobile ? {
+                              transform: isCardFlipped ? 'rotateY(0deg) scale(1)' : 'rotateY(0deg) scale(0.93)',
+                              opacity: isCardFlipped ? 1 : 0,
+                              transition: 'opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
+                              pointerEvents: isCardFlipped ? 'auto' : 'none'
+                            } : undefined}
+                          >
                           <div className="space-y-6">
                             <div className="space-y-2">
                               <span className="text-[9px] font-mono text-veltora-gold tracking-widest uppercase block">
@@ -1614,7 +1682,8 @@ export default function HomePage() {
 
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               )}
             </div>
