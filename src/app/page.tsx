@@ -9,16 +9,20 @@ import dynamic from 'next/dynamic';
 const WatchCanvas = dynamic(() => import('@/components/WatchCanvas'), { ssr: false });
 import CustomizerPanel from '@/components/CustomizerPanel';
 import CheckoutDrawer from '@/components/CheckoutDrawer';
+import BespokeCertificate from '@/components/BespokeCertificate';
 import { transformToVeltora, VeltoraProduct } from '@/lib/transformProduct';
-import { Volume2, VolumeX, Menu, X, ArrowDown, MapPin, Check, Star } from 'lucide-react';
+import { Volume2, VolumeX, Menu, X, ArrowDown, MapPin, Check, Star, Search, Truck, ShieldCheck } from 'lucide-react';
 import gsap from 'gsap';
 
 export default function HomePage() {
   const isMuted = useStore((state) => state.isMuted);
   const toggleMute = useStore((state) => state.toggleMute);
   const loadFromURL = useStore((state) => state.loadFromURL);
+  const activeModel = useStore((state) => state.activeModel);
   const setActiveModel = useStore((state) => state.setActiveModel);
   const setBasePrice = useStore((state) => state.setBasePrice);
+  const escapementVph = useStore((state) => state.escapementVph);
+  const setEscapementVph = useStore((state) => state.setEscapementVph);
 
   // States
   const [navVisible, setNavVisible] = useState(false);
@@ -43,6 +47,7 @@ export default function HomePage() {
   const mechanismRef = useRef<HTMLDivElement>(null);
   const collectionsRef = useRef<HTMLDivElement>(null);
   const collectionsTrackRef = useRef<HTMLDivElement>(null);
+  const customizerRef = useRef<HTMLDivElement>(null);
   const heritageRef = useRef<HTMLDivElement>(null);
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
 
@@ -61,12 +66,33 @@ export default function HomePage() {
   const [craftScrollProgress, setCraftScrollProgress] = useState(0); // 0 -> 1 within the section scroll
   const [brandStoryProgress, setBrandStoryProgress] = useState(0); // 0 -> 1 scroll progress relative to screen center
   const [mechanismExplosion, setMechanismExplosion] = useState(0); // 0 -> 1 scroll explosive factor
+  const [currentDetailIdx, setCurrentDetailIdx] = useState(0); // active detail step index (0 to 4)
+  const [exitingDetailIdx, setExitingDetailIdx] = useState<number | null>(null); // exiting detail step index
   const [collectionsScrollProgress, setCollectionsScrollProgress] = useState(0); // 0 -> 1 within collections scroll
   const [collectionsTrackWidth, setCollectionsTrackWidth] = useState(0); // horizontal scroll track width in px
   const [collectionsSectionHeight, setCollectionsSectionHeight] = useState(0); // dynamic vertical height in px
+  const [customizerScrollProgress, setCustomizerScrollProgress] = useState(0); // 0 -> 1 scroll progress for customizer steps
   const [activeHeritageYear, setActiveHeritageYear] = useState(1923);
   const [timelineProgress, setTimelineProgress] = useState(0); // 0 -> 1 within the active step
   const [countStats, setCountStats] = useState({ hours: 0, components: 0, year: 0, countries: 0 });
+  const [activeSection, setActiveSection] = useState('hero'); // tracks active navbar section
+  const [activeCardSide, setActiveCardSide] = useState<'front' | 'back'>('front'); // active side of the VPH card
+  const [frontVph, setFrontVph] = useState(28800); // VPH value on front side of the card
+  const [backVph, setBackVph] = useState(28800); // VPH value on back side of the card
+
+  // Showrooms & Delivery Concierge States
+  const allShowrooms = [
+    { city: 'Geneva Atelier', address: 'Rue du Rhône 34, 1204 Genève', hours: 'Mon - Sat: 10:00 - 18:00', phone: '+41 22 310 1923' },
+    { city: 'Dubai Exhibition Gallery', address: 'The Dubai Mall, Fashion Avenue, Dubai', hours: 'Mon - Sun: 10:00 - 22:00', phone: '+971 4 362 7900' },
+    { city: 'Tokyo Ginza Boutique', address: '7-Chome Ginza, Tokyo 104-0061', hours: 'Tue - Sun: 11:00 - 19:00', phone: '+81 3 5562 1961' },
+    { city: 'London Mayfair Salon', address: 'Bond Street 14, London W1S', hours: 'Mon - Sat: 10:00 - 18:30', phone: '+44 20 7493 1984' },
+    { city: 'New York Fifth Ave Atelier', address: '730 Fifth Ave, New York NY 10019', hours: 'Mon - Sat: 10:00 - 19:00', phone: '+1 212 555 2024' },
+  ];
+  const [showroomSearch, setShowroomSearch] = useState('');
+  const [filteredShowrooms, setFilteredShowrooms] = useState(allShowrooms);
+  const [deliveryZip, setDeliveryZip] = useState('');
+  const [deliveryResult, setDeliveryResult] = useState<{ checked: boolean; deliverable: boolean; dateString?: string } | null>(null);
+  const [conciergeProgress, setConciergeProgress] = useState(0); // 0 -> 1 scroll progress for showrooms/delivery section
 
   // Heritage Timeline Active Image index
   const heritageImages = {
@@ -313,6 +339,21 @@ export default function HomePage() {
     };
   }, [filteredProducts, products]);
 
+  // Synchronize dynamic specifications details in Section 04 discretely
+  useEffect(() => {
+    const stepsCount = 5;
+    const step = Math.min(Math.floor(mechanismExplosion * stepsCount), stepsCount - 1);
+    if (step !== currentDetailIdx) {
+      setExitingDetailIdx(currentDetailIdx);
+      setCurrentDetailIdx(step);
+      
+      const timer = setTimeout(() => {
+        setExitingDetailIdx(null);
+      }, 550);
+      return () => clearTimeout(timer);
+    }
+  }, [mechanismExplosion, currentDetailIdx]);
+
   // Scroll listeners for GSAP-like triggers and metronome
   useEffect(() => {
     const handleScroll = () => {
@@ -352,7 +393,9 @@ export default function HomePage() {
       // 3. Section 04 - Internal Mechanism Scroll Progress (Movement Canvas)
       if (mechanismRef.current) {
         const rect = mechanismRef.current.getBoundingClientRect();
-        const progress = (vh - rect.top) / vh;
+        const totalScrollable = rect.height - vh;
+        const scrollDistance = -rect.top;
+        const progress = totalScrollable > 0 ? scrollDistance / totalScrollable : 0;
         setMechanismExplosion(Math.min(Math.max(progress, 0), 1));
       }
 
@@ -363,6 +406,15 @@ export default function HomePage() {
         const scrollDistance = -rect.top;
         const progress = totalScrollable > 0 ? scrollDistance / totalScrollable : 0;
         setCollectionsScrollProgress(Math.min(Math.max(progress, 0), 1));
+      }
+
+      // 3.8 Section 06 - Customizer Scroll Progress
+      if (customizerRef.current) {
+        const rect = customizerRef.current.getBoundingClientRect();
+        const totalScrollable = rect.height - vh;
+        const scrollDistance = -rect.top;
+        const progress = totalScrollable > 0 ? scrollDistance / totalScrollable : 0;
+        setCustomizerScrollProgress(Math.min(Math.max(progress, 0), 1));
       }
 
       // 4. Section 07 - Heritage timeline active year
@@ -390,6 +442,41 @@ export default function HomePage() {
             year: Math.min(Math.round(1923 + (clampedProgress * 101)), 2024),
             countries: Math.min(Math.round(clampedProgress * 12), 12),
           });
+        }
+
+        // Track active section for navbar highlighting
+        const sectionsList = [
+          { id: 'brand-story', selector: '#brand-story' },
+          { id: 'craftsmanship', selector: '#craftsmanship' },
+          { id: 'movement', selector: '#movement' },
+          { id: 'collections', selector: '#collections' },
+          { id: 'customizer', selector: '#customizer' },
+          { id: 'reviews', selector: '#reviews' }
+        ];
+
+        let currentActive = 'hero';
+        for (const sec of sectionsList) {
+          const el = document.querySelector(sec.selector);
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            if (rect.top <= vh * 0.45 && rect.bottom > vh * 0.45) {
+              currentActive = sec.id;
+              break;
+            }
+          }
+        }
+        setActiveSection(currentActive);
+
+        // Section 08: Showrooms & Delivery Concierge scroll tracker
+        const showroomsEl = document.getElementById('showrooms');
+        if (showroomsEl) {
+          const rect = showroomsEl.getBoundingClientRect();
+          const trackHeight = showroomsEl.clientHeight - vh;
+          if (trackHeight > 0) {
+            const progress = -rect.top / trackHeight;
+            const clamped = Math.max(0, Math.min(1, progress));
+            setConciergeProgress(clamped);
+          }
         }
       }
     };
@@ -439,6 +526,37 @@ export default function HomePage() {
     }
   };
 
+  const handleShowroomSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    audioController.playClick();
+    if (!showroomSearch) {
+      setFilteredShowrooms(allShowrooms);
+    } else {
+      const query = showroomSearch.toLowerCase();
+      const filtered = allShowrooms.filter(s => 
+        s.city.toLowerCase().includes(query) || 
+        s.address.toLowerCase().includes(query)
+      );
+      setFilteredShowrooms(filtered);
+    }
+  };
+
+  const handleCheckDelivery = (e: React.FormEvent) => {
+    e.preventDefault();
+    audioController.playClick();
+    if (!deliveryZip) return;
+    const estDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+    setDeliveryResult({
+      checked: true,
+      deliverable: true,
+      dateString: estDate
+    });
+  };
+
   const scrollToHeritageStep = (idx: number) => {
     if (!heritageRef.current) return;
     const containerTop = heritageRef.current.offsetTop;
@@ -449,6 +567,17 @@ export default function HomePage() {
       behavior: 'smooth'
     });
   };
+
+  // Retrograde wedge calculations for caliber sunburst ray shadow
+  const radStart = (-120 * Math.PI) / 180;
+  const progressAngle = -120 + mechanismExplosion * 240;
+  const radEnd = (progressAngle * Math.PI) / 180;
+  const x1 = 50 + 42 * Math.cos(radStart);
+  const y1 = 50 + 42 * Math.sin(radStart);
+  const x2 = 50 + 42 * Math.cos(radEnd);
+  const y2 = 50 + 42 * Math.sin(radEnd);
+  const largeArcFlag = (mechanismExplosion * 240) > 180 ? 1 : 0;
+  const wedgePath = `M 50 50 L ${x1} ${y1} A 42 42 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
 
   return (
     <div className="relative min-h-screen bg-veltora-obsidian font-body overflow-x-clip selection:bg-veltora-gold selection:text-veltora-obsidian">
@@ -544,13 +673,37 @@ export default function HomePage() {
           </a>
 
           {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center space-x-8 text-xs font-mono tracking-widest uppercase text-veltora-steel">
-            <a href="#brand-story" className="hover:text-veltora-cream transition-colors">Manifesto</a>
-            <a href="#craftsmanship" className="hover:text-veltora-cream transition-colors">Craftsmanship</a>
-            <a href="#movement" className="hover:text-veltora-cream transition-colors">The Caliber</a>
-            <a href="#collections" className="hover:text-veltora-cream transition-colors">Collections</a>
-            <a href="#customizer" className="hover:text-veltora-cream transition-colors">Customizer</a>
-            <a href="#reviews" className="hover:text-veltora-cream transition-colors">Reviews</a>
+          <nav className="hidden md:flex items-center space-x-8 text-xs font-mono tracking-widest uppercase">
+            {[
+              { id: 'brand-story', label: 'Manifesto', href: '#brand-story' },
+              { id: 'craftsmanship', label: 'Craftsmanship', href: '#craftsmanship' },
+              { id: 'movement', label: 'The Caliber', href: '#movement' },
+              { id: 'collections', label: 'Collections', href: '#collections' },
+              { id: 'customizer', label: 'Customizer', href: '#customizer' },
+              { id: 'reviews', label: 'Reviews', href: '#reviews' },
+            ].map((link) => {
+              const isActive = activeSection === link.id;
+              return (
+                <a 
+                  key={link.id} 
+                  href={link.href} 
+                  className={`relative py-1 transition-all duration-300 ${
+                    isActive 
+                      ? 'text-veltora-gold font-bold' 
+                      : 'text-veltora-steel hover:text-veltora-cream'
+                  }`}
+                  style={isActive ? { textShadow: '0 0 10px rgba(207, 162, 64, 0.7)' } : undefined}
+                >
+                  {link.label}
+                  {/* Glowing underline indicator */}
+                  <span 
+                    className={`absolute bottom-0 left-0 w-full h-[1px] bg-veltora-gold transition-all duration-300 origin-center ${
+                      isActive ? 'scale-x-100 opacity-100 shadow-[0_0_8px_rgba(207,162,64,0.8)]' : 'scale-x-0 opacity-0'
+                    }`}
+                  />
+                </a>
+              );
+            })}
           </nav>
 
           {/* Right Header Actions */}
@@ -643,7 +796,7 @@ export default function HomePage() {
         </div>
 
         {/* Scroll CTA indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-1.5 z-20 animate-bounce">
+        <div className="absolute bottom-8 left-0 right-0 mx-auto w-fit flex flex-col items-center gap-1.5 z-20 animate-bounce">
           <a 
             href="#brand-story" 
             className="text-[10px] font-mono tracking-widest text-veltora-gold uppercase cursor-pointer"
@@ -912,68 +1065,390 @@ export default function HomePage() {
 
 
       {/* SECTION 04 — INTERNAL MECHANISM: THE MOVEMENT */}
-      <section id="movement" ref={mechanismRef} className="relative w-full min-h-screen py-24 bg-veltora-obsidian flex items-center overflow-hidden">
+      <section id="movement" ref={mechanismRef} className="relative w-full h-[200vh] bg-veltora-obsidian">
         {/* Ambient background gold glow to simulate lens flare */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_60%,rgba(207,162,64,0.035)_0%,transparent_65%)] pointer-events-none z-0" />
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full grid grid-cols-1 lg:grid-cols-10 gap-12 items-center">
-          {/* Left Masterpiece Caliber View */}
-          <div className="lg:col-span-6 h-[55vh] lg:h-[70vh] relative flex items-center justify-center overflow-hidden pointer-events-none z-10">
-            <div 
-              className="relative w-[300px] h-[300px] sm:w-[440px] sm:h-[440px] flex items-center justify-center transition-transform duration-75 ease-out"
-              style={{
-                transform: `rotate(${mechanismExplosion * 360}deg) scale(${0.85 + mechanismExplosion * 0.15})`
-              }}
-            >
-              <Image 
-                src="/assets/veltora_caliber_v9_transparent.png" 
-                alt="VELTORA Caliber V-9 Tourbillon" 
-                fill 
-                className="object-contain"
-              />
-            </div>
+        
+        {/* Dynamic style block for Caliber card transitions */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          .mechanism-detail-card-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+            overflow: visible;
+          }
+          .mechanism-detail-card {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 220px;
+            background: rgba(22, 19, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(184, 161, 106, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
+          .mech-hidden {
+            opacity: 0;
+            transform: translate3d(240px, 120px, 0) scale(0.92);
+            pointer-events: none;
+          }
+          .mech-exiting {
+            opacity: 0;
+            transform: translate3d(0, -90px, 0) scale(0.92);
+            pointer-events: none;
+            transition: opacity 0.28s cubic-bezier(0.4, 0, 1, 1), transform 0.28s cubic-bezier(0.4, 0, 1, 1);
+          }
+          .mech-active {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) scale(1);
+            pointer-events: auto;
+            transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1) 0.18s, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1) 0.18s;
+          }
+          .card-flipper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-style: preserve-3d;
+          }
+          .card-flipper.is-flipped {
+            transform: rotateY(180deg);
+          }
+          .card-face {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 220px;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            padding: 24px;
+            background: rgba(22, 19, 15, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(184, 161, 106, 0.2);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+          }
+          .card-face-front {
+            transform: rotateY(0deg);
+          }
+          .card-face-back {
+            transform: rotateY(180deg);
+          }
+        `}} />
+
+        {/* Sticky viewport container */}
+        <div className="sticky top-0 w-full h-screen flex flex-col justify-center overflow-hidden py-12 sm:py-16 bg-veltora-obsidian">
+          
+          {/* Centered Heading */}
+          <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full text-center mb-6 sm:mb-8 z-20">
+            <span className="text-[11px] font-mono text-veltora-gold tracking-[0.3em] uppercase block">
+              THE ENGINE
+            </span>
+            <h3 className="text-4xl font-display text-veltora-cream tracking-wide uppercase mt-1">
+              VELTORA Caliber V-9
+            </h3>
           </div>
 
-          {/* Right Specs panel with 3D scroll tilt and hover effects */}
-          <div 
-            className="lg:col-span-4 flex flex-col justify-center glass-panel p-8 sm:p-10 rounded-2xl border border-veltora-gold/20 bg-[#1c1305]/85 backdrop-blur-md shadow-2xl transition-all duration-500 hover:border-veltora-gold/50 hover:shadow-[0_0_35px_rgba(207,162,64,0.15)] will-change-transform origin-top"
-            style={{
-              transform: `perspective(1200px) rotateX(${18 - mechanismExplosion * 18}deg)`,
-              opacity: 0.6 + mechanismExplosion * 0.4
-            }}
-          >
-            <div className="max-w-md space-y-6">
-              <span className="text-[10px] font-mono text-veltora-gold tracking-widest uppercase">
-                THE ENGINE
-              </span>
-              <h3 className="text-4xl font-display text-veltora-cream uppercase tracking-wider">
-                VELTORA Caliber V-9
-              </h3>
-              <p className="text-xs text-veltora-steel font-mono uppercase tracking-widest">
-                EXPLODED MODEL VIEW · SCROLL TO ROTATE
-              </p>
+          <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full grid grid-cols-1 lg:grid-cols-10 gap-12 items-center z-10">
+            {/* Left Masterpiece Caliber View */}
+            <div className="lg:col-span-6 h-[45vh] lg:h-[65vh] relative flex items-center justify-center overflow-hidden pointer-events-none">
               
-              {/* Specs lines */}
-              <div className="space-y-3.5 border-t border-veltora-gold/15 pt-6 font-mono text-xs">
-                {[
-                  { label: 'Frequency', val: '4 Hz / 28,800 vph' },
-                  { label: 'Power Reserve', val: '72 Hours' },
-                  { label: 'Components', val: '287 Parts' },
-                  { label: 'Finishing', val: 'Côtes de Genève, beveled bridges' },
-                  { label: 'Jewels', val: '35 synthetic rubies' }
-                ].map((spec, idx) => (
-                  <div 
-                    key={idx}
-                    className="flex justify-between border-b border-veltora-gold/5 pb-2 transition-all duration-300 transform group/item hover:translate-x-1"
-                    style={{ 
-                      opacity: mechanismExplosion >= 0.1 ? 1 : 0.3,
-                      transform: `translateX(${mechanismExplosion >= 0.1 ? 0 : 30}px)`
-                    }}
-                  >
-                    <span className="text-veltora-steel group-hover/item:text-veltora-cream transition-colors uppercase">{spec.label}</span>
-                    <span className="text-veltora-cream group-hover/item:text-veltora-gold transition-colors text-right">{spec.val}</span>
+              {/* Giant Retrograde Caliber Gauge in the background */}
+              <div className="absolute inset-0 flex items-center justify-center z-0 opacity-25">
+                <div className="relative w-[340px] h-[340px] sm:w-[500px] sm:h-[500px] flex items-center justify-center select-none">
+                  {/* SVG arc */}
+                  <svg width="100%" height="100%" viewBox="0 0 100 100" className="transform -rotate-90">
+                    <defs>
+                      <radialGradient id="sunburst-ray-glow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor="#D4AF37" stopOpacity="0" />
+                        <stop offset="70%" stopColor="#D4AF37" stopOpacity="0.04" />
+                        <stop offset="90%" stopColor="#D4AF37" stopOpacity="0.18" />
+                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.45" />
+                      </radialGradient>
+                    </defs>
+
+                    {/* Volumetric sun ray shadow glow wedge */}
+                    <path
+                      d={wedgePath}
+                      fill="url(#sunburst-ray-glow)"
+                      style={{
+                        filter: 'blur(10px)',
+                        opacity: mechanismExplosion > 0.01 ? 0.85 : 0,
+                        transition: 'opacity 0.25s ease-out'
+                      }}
+                    />
+
+                    {/* Faint background arc */}
+                    <path
+                      d="M 20 80 A 42 42 0 1 1 80 80"
+                      fill="none"
+                      stroke="rgba(184, 161, 106, 0.2)"
+                      strokeWidth="1.2"
+                      strokeLinecap="round"
+                    />
+
+                    {/* Glowing drop shadow outline behind active progress arc */}
+                    <path
+                      d="M 20 80 A 42 42 0 1 1 80 80"
+                      fill="none"
+                      stroke="#D4AF37"
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray="180"
+                      style={{
+                        strokeDashoffset: 180 - 180 * mechanismExplosion,
+                        filter: 'blur(6px)',
+                        opacity: 0.45,
+                        transition: 'stroke-dashoffset 0.15s ease-out'
+                      }}
+                    />
+
+                    {/* Active progress arc */}
+                    <path
+                      d="M 20 80 A 42 42 0 1 1 80 80"
+                      fill="none"
+                      stroke="#D4AF37"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeDasharray="180"
+                      style={{
+                        strokeDashoffset: 180 - 180 * mechanismExplosion,
+                        filter: 'drop-shadow(0 0 4px rgba(212, 175, 55, 0.6))',
+                        transition: 'stroke-dashoffset 0.15s ease-out'
+                      }}
+                    />
+                  </svg>
+
+                  {/* Rotational retrograde pointer hand */}
+                  <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                    <div 
+                      className="bg-gradient-to-t from-transparent via-veltora-gold/40 to-veltora-gold rounded-full origin-bottom transition-transform duration-100 ease-out"
+                      style={{
+                        transform: `rotate(${-120 + mechanismExplosion * 240}deg) translateY(-80px)`,
+                        height: '140px',
+                        width: '2px',
+                        boxShadow: '0 0 12px rgba(212, 175, 55, 0.8)'
+                      }}
+                    />
+                    {/* Center axis pin */}
+                    <div className="absolute w-5 h-5 rounded-full bg-veltora-obsidian border-2 border-veltora-gold shadow-[0_0_8px_rgba(212, 175, 55, 0.6)] z-20" />
                   </div>
-                ))}
+
+                  {/* Tick numbers positioned around the circular arc */}
+                  {[
+                    { val: '01', style: { bottom: '15%', left: '16%' } },
+                    { val: '02', style: { top: '35%', left: '10%' } },
+                    { val: '03', style: { top: '10%', left: '50%', transform: 'translateX(-50%)' } },
+                    { val: '04', style: { top: '35%', right: '10%' } },
+                    { val: '05', style: { bottom: '15%', right: '16%' } }
+                  ].map((tick, idx) => {
+                    const isActive = currentDetailIdx === idx;
+                    return (
+                      <span 
+                        key={idx}
+                        className={`absolute font-mono text-[9px] sm:text-xs font-bold transition-all duration-300 ${
+                          isActive ? 'text-veltora-gold scale-125' : 'text-veltora-steel/30'
+                        }`}
+                        style={{ ...tick.style, textShadow: isActive ? '0 0 8px rgba(212,175,55,0.7)' : undefined }}
+                      >
+                        {tick.val}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
+
+              {/* Spinning Caliber Tourbillon (Centered in front of the gauge) */}
+              <div 
+                className="relative w-[300px] h-[300px] sm:w-[440px] sm:h-[440px] flex items-center justify-center transition-transform duration-75 ease-out z-10"
+                style={{
+                  transform: `rotate(${mechanismExplosion * 360}deg) scale(${0.85 + mechanismExplosion * 0.15})`
+                }}
+              >
+                <div 
+                  className="relative w-full h-full"
+                  style={{
+                    animation: `sweepSecond ${40 - (escapementVph - 18000) * 0.0015}s linear infinite`
+                  }}
+                >
+                  <Image 
+                    src="/assets/veltora_caliber_v9_transparent.png" 
+                    alt="VELTORA Caliber V-9 Tourbillon" 
+                    fill 
+                    className="object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Right Specs panel */}
+            <div className="lg:col-span-4 flex flex-col justify-between h-[380px]">
+              {/* Static buttons on top right, always visible */}
+              <div className="space-y-2.5 border-b border-veltora-gold/15 pb-4 mb-4">
+                <span className="block text-[10px] font-mono text-veltora-steel tracking-[0.2em] uppercase font-bold">
+                  CALIBER SPEED REGULATOR (VPH)
+                </span>
+                <div className="grid grid-cols-4 gap-2">
+                  {[18000, 21600, 28800, 36000].map((vph) => {
+                    const isActive = escapementVph === vph;
+                    const labels = {
+                      18000: '18k VPH',
+                      21600: '21.6k VPH',
+                      28800: '28.8k VPH',
+                      36000: '36k VPH'
+                    };
+                    return (
+                      <button
+                        key={vph}
+                        onClick={() => {
+                          audioController.playClasp();
+                          audioController.startMetronome(vph / 3600);
+                          
+                          // 180 degree double-sided card flip logic
+                          if (activeCardSide === 'front') {
+                            setBackVph(vph);
+                            setActiveCardSide('back');
+                          } else {
+                            setFrontVph(vph);
+                            setActiveCardSide('front');
+                          }
+                          setEscapementVph(vph);
+                          
+                          if (mechanismRef.current) {
+                            mechanismRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }
+                        }}
+                        className={`py-2 px-1 rounded font-mono text-[8px] sm:text-[9px] font-bold border text-center transition-all ${
+                          isActive
+                            ? 'bg-veltora-gold text-veltora-obsidian border-veltora-gold shadow-[0_0_8px_rgba(207,162,64,0.3)]'
+                            : 'bg-veltora-obsidian text-veltora-cream border-veltora-gold/15 hover:border-veltora-gold/45'
+                        }`}
+                      >
+                        {labels[vph as keyof typeof labels]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Details Stack Container (full width) */}
+              <div className="relative h-[250px] w-full overflow-visible">
+                {(() => {
+                  const detailsData = [
+                    {
+                      label: 'Oscillation Frequency',
+                      val: `${(escapementVph / 7200).toFixed(1)} Hz / ${escapementVph.toLocaleString()} VPH`,
+                      desc: 'The beat rate determines hand sweep smoothness and kinetic stability. Regulate the oscillation speed above.'
+                    },
+                    {
+                      label: 'Caliber Autonomy',
+                      val: '72 Hours Power Reserve',
+                      desc: 'Dual-barrel mainspring system provides constant power flow over 3 full days of chronometric autonomy.'
+                    },
+                    {
+                      label: 'Atelier Architecture',
+                      val: '287 Mechanical Components',
+                      desc: 'Individually hand-filed, finished and assembled Swiss caliber gears with Côte de Genève bevelling.'
+                    },
+                    {
+                      label: 'Masterpiece Finishing',
+                      val: 'Anglage & Bevelled Bridges',
+                      desc: 'Bridges and plates feature manually beveled edges, contrasting mirror-polishes, and satin circular-grain wheels.'
+                    },
+                    {
+                      label: 'Caliber Jewels',
+                      val: '35 Synthetic Rubies',
+                      desc: 'Synthetic ruby jewel bearings located at pivot points to minimize mechanical friction and energy loss.'
+                    }
+                  ];
+
+                  return detailsData.map((detail, idx) => {
+                    let cardState = 'mech-hidden';
+                    if (idx === currentDetailIdx) {
+                      cardState = 'mech-active';
+                    } else if (idx === exitingDetailIdx) {
+                      cardState = 'mech-exiting';
+                    }
+
+                    if (idx === 0) {
+                      const isFlipped = activeCardSide === 'back';
+                      return (
+                        <div 
+                          key={idx} 
+                          className={`mechanism-detail-card ${cardState}`}
+                          style={{ 
+                            background: 'transparent', 
+                            border: 'none', 
+                            padding: 0, 
+                            boxShadow: 'none',
+                            perspective: '1000px'
+                          }}
+                        >
+                          <div className={`card-flipper ${isFlipped ? 'is-flipped' : ''}`}>
+                            {/* Front Face */}
+                            <div className="card-face card-face-front">
+                              <span className="text-[10px] font-mono text-veltora-gold tracking-[0.2em] uppercase font-bold">
+                                SPECIFICATION 01 OF 05
+                              </span>
+                              <h4 className="text-2xl font-display text-veltora-cream uppercase mt-2.5 tracking-wide">
+                                Oscillation Frequency
+                              </h4>
+                              <p className="text-sm font-mono text-veltora-gold-light mt-1 font-semibold leading-relaxed">
+                                {(frontVph / 7200).toFixed(1)} Hz / {frontVph.toLocaleString()} VPH
+                              </p>
+                              <p className="text-xs text-veltora-steel font-mono mt-3 leading-relaxed">
+                                {detail.desc}
+                              </p>
+                            </div>
+                            {/* Back Face */}
+                            <div className="card-face card-face-back">
+                              <span className="text-[10px] font-mono text-veltora-gold tracking-[0.2em] uppercase font-bold">
+                                SPECIFICATION 01 OF 05
+                              </span>
+                              <h4 className="text-2xl font-display text-veltora-cream uppercase mt-2.5 tracking-wide">
+                                Oscillation Frequency
+                              </h4>
+                              <p className="text-sm font-mono text-veltora-gold-light mt-1 font-semibold leading-relaxed">
+                                {(backVph / 7200).toFixed(1)} Hz / {backVph.toLocaleString()} VPH
+                              </p>
+                              <p className="text-xs text-veltora-steel font-mono mt-3 leading-relaxed">
+                                {detail.desc}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={idx} className={`mechanism-detail-card ${cardState}`}>
+                        <span className="text-[10px] font-mono text-veltora-gold tracking-[0.2em] uppercase font-bold">
+                          SPECIFICATION 0{idx + 1} OF 05
+                        </span>
+                        <h4 className="text-2xl font-display text-veltora-cream uppercase mt-2.5 tracking-wide">
+                          {detail.label}
+                        </h4>
+                        <p className="text-sm font-mono text-veltora-gold-light mt-1 font-semibold leading-relaxed">
+                          {detail.val}
+                        </p>
+                        <p className="text-xs text-veltora-steel font-mono mt-3 leading-relaxed">
+                          {detail.desc}
+                        </p>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+
             </div>
           </div>
         </div>
@@ -1132,24 +1607,37 @@ export default function HomePage() {
       </section>
 
       {/* SECTION 06 — CUSTOMIZER: CONFIGURE YOURS */}
-      <section id="customizer" className="relative w-full min-h-screen py-32 bg-veltora-obsidian">
+      <section id="customizer" ref={customizerRef} className="relative w-full h-[350vh] bg-veltora-obsidian">
         {/* Scroll anchor target */}
         <div id="customizer-section" className="absolute top-0 left-0" />
 
-        <div className="max-w-7xl mx-auto px-6 sm:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-          {/* Left Three.js Live watch canvas */}
-          <div className="lg:col-span-7 h-[50vh] lg:h-[70vh] relative flex items-center justify-center overflow-hidden">
-            <WatchCanvas />
-            
-            {/* Customizer Hint Overlay */}
-            <div className="absolute top-4 left-4 bg-veltora-charcoal/85 rounded px-3 py-1 text-[8px] font-mono text-veltora-gold uppercase tracking-widest">
-              Live PBR 3D Render
-            </div>
+        {/* Sticky viewport wrapper */}
+        <div className="sticky top-0 w-full h-screen flex flex-col justify-center overflow-hidden py-10">
+          {/* Section Header moved up */}
+          <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full mb-6 z-20">
+            <span className="text-[11px] font-mono text-veltora-gold tracking-[0.3em] uppercase block">
+              VELTORA BESPOKE PROGRAMME
+            </span>
+            <h3 className="text-4xl font-display text-veltora-cream tracking-wide uppercase mt-1">
+              Configure Your Timepiece: <span className="text-veltora-gold font-bold">{activeModel}</span>
+            </h3>
           </div>
 
-          {/* Right Configuration parameters control */}
-          <div className="lg:col-span-5">
-            <CustomizerPanel />
+          <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center z-10">
+            {/* Left Three.js Live watch canvas */}
+            <div className="lg:col-span-7 h-[45vh] lg:h-[65vh] relative flex items-center justify-center overflow-hidden">
+              <WatchCanvas />
+              
+              {/* Customizer Hint Overlay */}
+              <div className="absolute top-4 left-4 bg-veltora-charcoal/85 rounded px-3 py-1 text-[8px] font-mono text-veltora-gold uppercase tracking-widest">
+                Live PBR 3D Render
+              </div>
+            </div>
+
+            {/* Right Configuration parameters control */}
+            <div className="lg:col-span-5 relative">
+              <CustomizerPanel scrollProgress={customizerScrollProgress} />
+            </div>
           </div>
         </div>
       </section>
@@ -1543,7 +2031,233 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 08 — ACQUISITION: FOOTER CTA */}
+      {/* SECTION 08 — GLOBAL CONCIERGE: LOCATION & DELIVERY */}
+      <section id="showrooms" className="relative w-full h-[200vh] bg-veltora-obsidian">
+        {/* Slow zoom-in/zoom-out background image */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <Image 
+            src="/assets/veltora_showroom_bg.png"
+            alt="VELTORA Showroom Interior"
+            fill
+            className="object-cover opacity-25 scale-100 zoom-bg-animation"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-veltora-obsidian via-transparent to-black" />
+          <div className="absolute inset-0 bg-black/45" />
+        </div>
+
+        {/* Global style block for background zoom animation */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes zoomInOutBg {
+            0% { transform: scale(1.0); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1.0); }
+          }
+          .zoom-bg-animation {
+            animation: zoomInOutBg 28s ease-in-out infinite;
+          }
+        `}} />
+
+        {/* Sticky viewport container */}
+        <div className="sticky top-0 w-full h-screen flex flex-col justify-center overflow-hidden py-12 sm:py-16">
+          <div className="max-w-7xl mx-auto px-6 sm:px-12 w-full z-10 space-y-8">
+            {/* Centered Heading */}
+            <div className="text-center space-y-2">
+              <span className="text-[10px] font-mono text-veltora-gold tracking-[0.3em] uppercase block font-bold">
+                GLOBAL CONCIERGE
+              </span>
+              <h2 className="text-3xl sm:text-5xl font-display text-veltora-cream uppercase tracking-wide">
+                Atelier Finder & Delivery
+              </h2>
+              <p className="text-veltora-steel text-xs font-mono max-w-xl mx-auto leading-relaxed">
+                Find an authorized VELTORA showroom near you or calculate direct armored delivery transit coordinates to your doorstep.
+              </p>
+            </div>
+
+            {/* Centered card-slider viewport */}
+            <div className="relative w-full max-w-2xl mx-auto h-[460px] flex items-center justify-center overflow-visible">
+              
+              {/* CARD 1: SHOWROOM FINDER */}
+              <div 
+                className="absolute inset-0 glass-panel p-6 sm:p-8 rounded-2xl border border-veltora-gold/15 bg-[#120e09]/90 backdrop-blur-md flex flex-col justify-between transition-all duration-500 ease-out"
+                style={{
+                  opacity: conciergeProgress < 0.5 ? 1 : 0,
+                  transform: `translate3d(0, ${conciergeProgress < 0.5 ? '0' : '-120px'}, 0) scale(${conciergeProgress < 0.5 ? '1' : '0.92'})`,
+                  pointerEvents: conciergeProgress < 0.5 ? 'auto' : 'none',
+                }}
+              >
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 border-b border-veltora-gold/10 pb-3">
+                    <MapPin className="w-5 h-5 text-veltora-gold" />
+                    <h3 className="text-lg font-display text-veltora-cream uppercase tracking-wider font-bold">
+                      Find Showrooms and Shops Near You to Experience Veltora
+                    </h3>
+                  </div>
+
+                  <form onSubmit={handleShowroomSearch} className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input 
+                        type="text" 
+                        value={showroomSearch}
+                        onChange={(e) => setShowroomSearch(e.target.value)}
+                        placeholder="ENTER CITY OR SHOWROOM NAME..." 
+                        className="w-full bg-[#181410] border border-veltora-gold/30 rounded-lg pl-10 pr-4 py-2.5 text-xs text-white placeholder-veltora-steel/70 focus:outline-none focus:border-veltora-gold focus:ring-1 focus:ring-veltora-gold font-mono font-bold"
+                      />
+                      <Search className="w-3.5 h-3.5 text-veltora-steel absolute left-3 top-1/2 transform -translate-y-1/2" />
+                    </div>
+                    <button 
+                      type="submit" 
+                      className="bg-veltora-gold hover:bg-veltora-gold-light text-veltora-obsidian font-mono uppercase font-bold px-5 rounded-lg text-xs tracking-wider transition-colors"
+                    >
+                      Search
+                    </button>
+                  </form>
+
+                  {/* Showroom List container */}
+                  <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                    {filteredShowrooms.length === 0 ? (
+                      <div className="text-center py-8 text-xs font-mono text-veltora-steel">
+                        No ateliers found matching your query.
+                      </div>
+                    ) : (
+                      filteredShowrooms.map((showroom, idx) => (
+                        <div 
+                          key={idx} 
+                          className="p-3 rounded-lg border border-veltora-gold/5 bg-veltora-obsidian/40 hover:border-veltora-gold/25 transition-all text-left space-y-2"
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <h4 className="text-xs font-mono text-veltora-gold uppercase font-bold">
+                              {showroom.city}
+                            </h4>
+                            <span className="text-[8px] font-mono text-veltora-steel bg-veltora-charcoal px-1.5 py-0.5 rounded">
+                              ACTIVE SHOWROOM
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-veltora-cream/80 font-light font-mono leading-relaxed">
+                            {showroom.address}
+                          </p>
+                          <div className="flex justify-between items-center text-[9px] font-mono text-veltora-steel pt-1 border-t border-veltora-gold/5">
+                            <span>{showroom.hours}</span>
+                            <span className="text-veltora-gold/70">{showroom.phone}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 2: DELIVERY AVAILABILITY */}
+              <div 
+                className="absolute inset-0 glass-panel p-6 sm:p-8 rounded-2xl border border-veltora-gold/15 bg-[#120e09]/90 backdrop-blur-md flex flex-col justify-between transition-all duration-500 ease-out"
+                style={{
+                  opacity: conciergeProgress >= 0.5 ? 1 : 0,
+                  transform: `translate3d(0, ${conciergeProgress >= 0.5 ? '0' : '120px'}, 0) scale(${conciergeProgress >= 0.5 ? '1' : '0.92'})`,
+                  pointerEvents: conciergeProgress >= 0.5 ? 'auto' : 'none',
+                }}
+              >
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3 border-b border-veltora-gold/10 pb-3">
+                    <Truck className="w-5 h-5 text-veltora-gold" />
+                    <h3 className="text-lg font-display text-veltora-cream uppercase tracking-wider font-bold font-semibold">
+                      Direct Delivery Checker
+                    </h3>
+                  </div>
+
+                  <p className="text-[11px] font-mono text-veltora-steel leading-relaxed">
+                    Due to the handcrafted assembly and high value of VELTORA timepieces, direct shipping is regulated via insured armored carriers (Ferrari Group or Malca-Amit). Enter your zip code or country below to verify coverage.
+                  </p>
+
+                  <form onSubmit={handleCheckDelivery} className="flex gap-2">
+                    <input 
+                      type="text" 
+                      required
+                      value={deliveryZip}
+                      onChange={(e) => setDeliveryZip(e.target.value)}
+                      placeholder="ENTER POSTAL CODE OR COUNTRY..." 
+                      className="flex-1 bg-[#181410] border border-veltora-gold/30 rounded-lg px-4 py-2.5 text-xs text-white placeholder-veltora-steel/70 focus:outline-none focus:border-veltora-gold focus:ring-1 focus:ring-veltora-gold font-mono font-bold"
+                    />
+                    <button 
+                      type="submit" 
+                      className="bg-veltora-gold hover:bg-veltora-gold-light text-veltora-obsidian font-mono uppercase font-bold px-5 rounded-lg text-xs tracking-wider transition-colors"
+                    >
+                      Check
+                    </button>
+                  </form>
+
+                  {/* Delivery Checker response output */}
+                  {deliveryResult && (
+                    <div className="p-4 rounded-xl border border-veltora-gold/20 bg-veltora-gold/5 space-y-3.5 text-left animate-fade-in">
+                      <div className="flex items-center gap-2 text-veltora-gold">
+                        <ShieldCheck className="w-4 h-4 text-veltora-gold" />
+                        <span className="text-[10px] font-mono uppercase font-bold tracking-wider">
+                          ✓ SECURE DELIVERY COVERAGE CONFIRMED
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <span className="block text-[8px] font-mono text-veltora-steel uppercase">
+                          ATELIER DOORSTEP PROMISE
+                        </span>
+                        <p className="text-xs sm:text-sm font-display text-veltora-cream leading-relaxed">
+                          Order now to have your custom Veltora hand-delivered to your doorstep in exactly <strong className="text-veltora-gold">14 days</strong>.
+                        </p>
+                        <p className="text-[10px] font-mono text-veltora-gold-light font-semibold">
+                          Estimated Hand-Delivery Date: {deliveryResult.dateString}
+                        </p>
+                      </div>
+
+                      {/* Shipping progression steps list */}
+                      <div className="border-t border-veltora-gold/10 pt-3 space-y-2">
+                        <span className="block text-[8px] font-mono text-veltora-steel uppercase mb-1">
+                          Transit Progress Timeline
+                        </span>
+                        <div className="grid grid-cols-4 gap-2 text-[8px] font-mono text-veltora-steel">
+                          <div className="space-y-1">
+                            <span className="block text-veltora-gold/90 font-bold">DAYS 1-2</span>
+                            <span className="block text-[7px] leading-tight">Assembly & Caliber Reg</span>
+                          </div>
+                          <div className="space-y-1 border-l border-veltora-gold/10 pl-2">
+                            <span className="block text-veltora-gold/90 font-bold">DAYS 3-10</span>
+                            <span className="block text-[7px] leading-tight">Finishing & Chrono Cert</span>
+                          </div>
+                          <div className="space-y-1 border-l border-veltora-gold/10 pl-2">
+                            <span className="block text-veltora-gold/90 font-bold">DAY 11</span>
+                            <span className="block text-[7px] leading-tight">Engraving & Boxing</span>
+                          </div>
+                          <div className="space-y-1 border-l border-veltora-gold/10 pl-2">
+                            <span className="block text-veltora-gold/90 font-bold">DAYS 12-14</span>
+                            <span className="block text-[7px] leading-tight">Armored Air Transit</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Central Scroll Helper Indicators */}
+            <div className="h-10 relative">
+              {conciergeProgress < 0.5 ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 font-mono text-[9px] text-veltora-gold tracking-[0.25em] animate-pulse">
+                  <span>SCROLL DOWN FOR DIRECT DELIVERY CHECKER</span>
+                  <ArrowDown className="w-3 h-3 animate-bounce" />
+                </div>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 font-mono text-[9px] text-veltora-gold tracking-[0.25em] animate-pulse">
+                  <div className="transform rotate-180 flex items-center justify-center">
+                    <ArrowDown className="w-3 h-3 animate-bounce" />
+                  </div>
+                  <span>SCROLL UP FOR ATELIER FINDER</span>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 09 — ACQUISITION: FOOTER CTA */}
       <section className="relative w-full min-h-[60vh] flex flex-col justify-between bg-black overflow-hidden py-12">
         {/* Footer cinematic background image */}
         <div className="absolute inset-0 z-0">
@@ -1702,6 +2416,9 @@ export default function HomePage() {
 
       {/* STRIPE PAYMENT DRAWER */}
       <CheckoutDrawer />
+      
+      {/* BESPOKE CRAFTSMANSHIP CERTIFICATE OVERLAY */}
+      <BespokeCertificate />
     </div>
   );
 }

@@ -112,6 +112,65 @@ class AudioController {
     osc.stop(now + 0.1);
   }
 
+  // Ratcheting clicks for watch winding / slider drag
+  public playWinding() {
+    this.initContext();
+    if (!this.ctx || this.isMuted) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gainNode = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(90, now + 0.015);
+
+    gainNode.gain.setValueAtTime(0.03, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+
+    osc.connect(gainNode);
+    gainNode.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.015);
+  }
+
+  // Solid double-click metallic lock sound for strap/bezel snap
+  public playClasp() {
+    this.initContext();
+    if (!this.ctx || this.isMuted) return;
+
+    const now = this.ctx.currentTime;
+    
+    // First click
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(1000, now);
+    gain1.gain.setValueAtTime(0.06, now);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.015);
+    osc1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.015);
+
+    // Second click (offset by 35ms)
+    setTimeout(() => {
+      if (!this.ctx || this.isMuted) return;
+      const now2 = this.ctx.currentTime;
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(500, now2);
+      gain2.gain.setValueAtTime(0.04, now2);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now2 + 0.025);
+      osc2.connect(gain2);
+      gain2.connect(this.ctx.destination);
+      osc2.start(now2);
+      osc2.stop(now2 + 0.025);
+    }, 35);
+  }
+
   // Starts the continuous metronome background ticking
   public startMetronome(vph: number = 2.8) {
     this.stopMetronome();

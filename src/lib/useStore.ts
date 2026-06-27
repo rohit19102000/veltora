@@ -14,6 +14,10 @@ interface CustomizerState extends WatchConfig {
   activeModel: string;
   basePrice: number;
   totalPrice: number;
+  explodeProgress: number;
+  xRayMode: boolean;
+  escapementVph: number;
+  isCertificateOpen: boolean;
   setCaseFinish: (finish: WatchConfig['caseFinish']) => void;
   setDialColor: (color: string) => void;
   setIndexStyle: (style: WatchConfig['indexStyle']) => void;
@@ -23,6 +27,10 @@ interface CustomizerState extends WatchConfig {
   setCartOpen: (open: boolean) => void;
   setActiveModel: (model: string) => void;
   setBasePrice: (price: number) => void;
+  setExplodeProgress: (progress: number) => void;
+  setXRayMode: (xRay: boolean) => void;
+  setEscapementVph: (vph: number) => void;
+  setCertificateOpen: (open: boolean) => void;
   loadFromURL: () => void;
   getShareableLink: () => string;
   updatePrice: () => void;
@@ -57,6 +65,10 @@ export const useStore = create<CustomizerState>((set, get) => ({
   activeModel: 'NOIR I',
   basePrice: 18000,
   totalPrice: 18000 + 3500 + 450, // base + gold + alligator
+  explodeProgress: 0,
+  xRayMode: false,
+  escapementVph: 28800,
+  isCertificateOpen: false,
 
   setCaseFinish: (finish) => {
     set({ caseFinish: finish });
@@ -96,6 +108,10 @@ export const useStore = create<CustomizerState>((set, get) => ({
     set({ basePrice: price });
     get().updatePrice();
   },
+  setExplodeProgress: (progress) => set({ explodeProgress: progress }),
+  setXRayMode: (xRay) => set({ xRayMode: xRay }),
+  setEscapementVph: (vph) => set({ escapementVph: vph }),
+  setCertificateOpen: (open) => set({ isCertificateOpen: open }),
   
   // Helpers
   updatePrice: () => {

@@ -35,17 +35,23 @@ const CASE_FINISHES = {
   },
 };
 
-function WatchModel({ explodeProgress = 0 }: { explodeProgress?: number }) {
+function WatchModel() {
   const caseFinish = useStore((state) => state.caseFinish);
   const dialColor = useStore((state) => state.dialColor);
   const indexStyle = useStore((state) => state.indexStyle);
   const strapType = useStore((state) => state.strapType);
   const initials = useStore((state) => state.initials);
+  const explodeProgress = useStore((state) => state.explodeProgress);
+  const xRayMode = useStore((state) => state.xRayMode);
+  const escapementVph = useStore((state) => state.escapementVph);
 
   const groupRef = useRef<THREE.Group>(null);
   const hourHandRef = useRef<THREE.Group>(null);
   const minuteHandRef = useRef<THREE.Group>(null);
   const secondHandRef = useRef<THREE.Group>(null);
+  const gear1Ref = useRef<THREE.Mesh>(null);
+  const gear2Ref = useRef<THREE.Mesh>(null);
+  const balanceWheelRef = useRef<THREE.Group>(null);
 
   // Load strap textures from Higgsfield-generated files using THREE.TextureLoader
   const strapTexture = useMemo(() => {
@@ -127,6 +133,20 @@ function WatchModel({ explodeProgress = 0 }: { explodeProgress?: number }) {
     }
     if (hourHandRef.current) {
       hourHandRef.current.rotation.y = -hr * (Math.PI / 6);
+    }
+
+    // Animate inner caliber skeleton gears
+    const hz = escapementVph / 3600; // e.g. 8 for 28800 vph
+    const gearSpeed = (escapementVph / 28800) * 0.015;
+    if (gear1Ref.current) {
+      gear1Ref.current.rotation.z += gearSpeed;
+    }
+    if (gear2Ref.current) {
+      gear2Ref.current.rotation.z -= gearSpeed * 0.7;
+    }
+    if (balanceWheelRef.current) {
+      // Oscillate balance wheel back and forth at the watch frequency
+      balanceWheelRef.current.rotation.z = Math.sin(date.getTime() * 0.001 * Math.PI * hz) * 0.8;
     }
 
     // Auto rotate case slowly when not hovered (interacted with)
@@ -232,7 +252,6 @@ function WatchModel({ explodeProgress = 0 }: { explodeProgress?: number }) {
         <cylinderGeometry args={[1.85, 1.85, 0.04, 64]} />
         <meshStandardMaterial map={canvasTexture || undefined} roughness={0.3} metalness={0.8} />
       </mesh>
-
       {/* 4. DIAL AND REVEALS */}
       {indexStyle !== 'skeleton' ? (
         <mesh position={[0, 0.2 + explodeProgress * 0.8, 0]} rotation={[Math.PI / 2, 0, 0]}>
@@ -241,6 +260,8 @@ function WatchModel({ explodeProgress = 0 }: { explodeProgress?: number }) {
             color={dialColor} 
             roughness={0.1} 
             metalness={dialColor === '#0A0A0B' ? 0.8 : 0.2} 
+            transparent={xRayMode}
+            opacity={xRayMode ? 0.15 : 1}
           />
         </mesh>
       ) : (
@@ -262,14 +283,55 @@ function WatchModel({ explodeProgress = 0 }: { explodeProgress?: number }) {
             <torusGeometry args={[1.65, 0.15, 8, 64]} />
             <meshStandardMaterial {...caseMatProps} />
           </mesh>
-          {/* Mini movement gears visible inside */}
-          <mesh position={[0.4, 0.12, -0.4]} rotation={[Math.PI / 2, 0.2, 0]}>
-            <cylinderGeometry args={[0.6, 0.6, 0.05, 16]} />
+        </group>
+      )}
+
+      {/* 4.5. INNER CALIBER ROTATING GEARS & ESCAPEMENT BALANCE WHEEL (Visible in Skeleton or X-Ray mode) */}
+      {(xRayMode || indexStyle === 'skeleton') && (
+        <group position={[0, explodeProgress * 0.8, 0]}>
+          {/* Gear 1: Gold center/drive gear */}
+          <mesh ref={gear1Ref} position={[0.4, 0.12, -0.4]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.6, 0.6, 0.04, 24]} />
             <meshStandardMaterial color="#B8A16A" metalness={0.9} roughness={0.2} />
           </mesh>
-          <mesh position={[-0.4, 0.10, 0.2]} rotation={[Math.PI / 2, -0.4, 0]}>
-            <cylinderGeometry args={[0.8, 0.8, 0.05, 24]} />
+
+          {/* Gear 2: Silver intermediate transmission gear */}
+          <mesh ref={gear2Ref} position={[-0.4, 0.10, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.75, 0.75, 0.04, 30]} />
             <meshStandardMaterial color="#C4C6CB" metalness={0.9} roughness={0.2} />
+          </mesh>
+
+          {/* Escapement Balance Wheel (Oscillates back & forth) */}
+          <group ref={balanceWheelRef} position={[0, 0.08, 0]}>
+            {/* Outer Rim */}
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.65, 0.05, 8, 32]} />
+              <meshStandardMaterial color="#E8D5A3" metalness={0.9} roughness={0.15} />
+            </mesh>
+            {/* Spoke 1 */}
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <boxGeometry args={[1.25, 0.04, 0.06]} />
+              <meshStandardMaterial color="#E8D5A3" metalness={0.9} roughness={0.15} />
+            </mesh>
+            {/* Spoke 2 */}
+            <mesh rotation={[Math.PI / 2, 0, Math.PI / 2]}>
+              <boxGeometry args={[1.25, 0.04, 0.06]} />
+              <meshStandardMaterial color="#E8D5A3" metalness={0.9} roughness={0.15} />
+            </mesh>
+          </group>
+
+          {/* Ruby Pivots / Jewel Bearings */}
+          <mesh position={[0.4, 0.14, -0.4]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.12, 0.12, 0.05, 12]} />
+            <meshStandardMaterial color="#E0115F" metalness={0.4} roughness={0.05} emissive="#E0115F" emissiveIntensity={0.6} />
+          </mesh>
+          <mesh position={[-0.4, 0.12, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.12, 0.12, 0.05, 12]} />
+            <meshStandardMaterial color="#E0115F" metalness={0.4} roughness={0.05} emissive="#E0115F" emissiveIntensity={0.6} />
+          </mesh>
+          <mesh position={[0, 0.11, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.14, 0.14, 0.05, 12]} />
+            <meshStandardMaterial color="#E0115F" metalness={0.4} roughness={0.05} emissive="#E0115F" emissiveIntensity={0.7} />
           </mesh>
         </group>
       )}
@@ -352,7 +414,7 @@ interface WatchCanvasProps {
   explodeProgress?: number;
 }
 
-export default function WatchCanvas({ onHoverStateChange, explodeProgress = 0 }: WatchCanvasProps) {
+export default function WatchCanvas({ onHoverStateChange }: WatchCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handlePointerOver = () => {
@@ -381,7 +443,7 @@ export default function WatchCanvas({ onHoverStateChange, explodeProgress = 0 }:
         <directionalLight position={[0, 8, 2]} intensity={1.0} color="#ffffff" />
         
         <Center>
-          <WatchModel explodeProgress={explodeProgress} />
+          <WatchModel />
         </Center>
         
         <OrbitControls 
