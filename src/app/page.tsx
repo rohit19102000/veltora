@@ -782,7 +782,7 @@ export default function HomePage() {
         {/* Content Details */}
         <div className="flex-1 flex flex-col justify-end items-center text-center pb-24 z-20 pointer-events-none">
           <div className="max-w-4xl mx-auto space-y-4">
-            <h1 ref={heroTitleRef} className="text-6xl sm:text-8xl md:text-9xl font-display tracking-[0.35em] text-veltora-cream uppercase overflow-hidden py-2 select-none">
+            <h1 ref={heroTitleRef} className="text-[12vw] xs:text-[10vw] sm:text-8xl md:text-9xl font-display tracking-[0.22em] sm:tracking-[0.35em] text-veltora-cream uppercase overflow-hidden py-2 select-none whitespace-nowrap text-center">
               {"VELTORA".split("").map((char, index) => (
                 <span key={index} className="char inline-block opacity-0 translate-y-[60px]">
                   {char}
@@ -1031,18 +1031,22 @@ export default function HomePage() {
             ].map((panel, idx) => (
               <div 
                 key={panel.id}
-                className={`glass-panel p-4 rounded-xl flex items-center gap-4 transition-all duration-300 transform border border-veltora-gold/15 ${
+                className={`transition-all duration-300 transform p-4 rounded-xl flex items-center gap-4 border ${
                   craftScrollProgress >= panel.activePct 
                     ? 'translate-x-0 opacity-100' 
                     : 'translate-x-[150%] opacity-0'
-                }`}
+                } bg-[#120e09]/30 border-veltora-gold/10 backdrop-blur-[3px] md:glass-panel md:bg-[#120e09]/90 md:border-veltora-gold/15 md:backdrop-blur-md`}
               >
-                <div className="w-14 h-14 rounded-lg overflow-hidden border border-veltora-gold/20 relative flex-shrink-0">
+                <div className="w-14 h-14 rounded-lg overflow-hidden border border-veltora-gold/25 relative flex-shrink-0 opacity-100">
                   <Image src={panel.img} alt={panel.label} fill className="object-cover" />
                 </div>
-                <div>
-                  <span className="text-[8px] font-mono text-veltora-gold tracking-widest uppercase">DETAIL 0{idx + 1}</span>
-                  <h4 className="text-sm font-display text-veltora-cream uppercase tracking-wide">{panel.label}</h4>
+                <div className="opacity-100">
+                  <span className="text-[8px] font-mono text-veltora-gold tracking-widest uppercase font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                    DETAIL 0{idx + 1}
+                  </span>
+                  <h4 className="text-sm font-display text-white uppercase tracking-wide font-bold drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                    {panel.label}
+                  </h4>
                 </div>
               </div>
             ))}
@@ -1082,16 +1086,22 @@ export default function HomePage() {
             top: 0;
             left: 0;
             width: 100%;
-            height: 220px;
+            height: 170px;
             background: rgba(22, 19, 15, 0.95);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(184, 161, 106, 0.2);
             border-radius: 16px;
-            padding: 24px;
+            padding: 16px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
             justify-content: center;
+          }
+          @media (min-width: 640px) {
+            .mechanism-detail-card {
+              height: 220px;
+              padding: 24px;
+            }
           }
           .mech-hidden {
             opacity: 0;
@@ -1125,10 +1135,10 @@ export default function HomePage() {
             top: 0;
             left: 0;
             width: 100%;
-            height: 220px;
+            height: 170px;
             backface-visibility: hidden;
             border-radius: 16px;
-            padding: 24px;
+            padding: 16px;
             background: rgba(22, 19, 15, 0.95);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(184, 161, 106, 0.2);
@@ -1136,6 +1146,12 @@ export default function HomePage() {
             display: flex;
             flex-direction: column;
             justify-content: center;
+          }
+          @media (min-width: 640px) {
+            .card-face {
+              height: 220px;
+              padding: 24px;
+            }
           }
           .card-face-front {
             transform: rotateY(0deg);
@@ -1396,31 +1412,31 @@ export default function HomePage() {
                           <div className={`card-flipper ${isFlipped ? 'is-flipped' : ''}`}>
                             {/* Front Face */}
                             <div className="card-face card-face-front">
-                              <span className="text-[10px] font-mono text-veltora-gold tracking-[0.2em] uppercase font-bold">
+                              <span className="text-[9px] sm:text-[10px] font-mono text-veltora-gold tracking-[0.2em] uppercase font-bold">
                                 SPECIFICATION 01 OF 05
                               </span>
-                              <h4 className="text-2xl font-display text-veltora-cream uppercase mt-2.5 tracking-wide">
+                              <h4 className="text-lg sm:text-2xl font-display text-veltora-cream uppercase mt-1.5 sm:mt-2.5 tracking-wide">
                                 Oscillation Frequency
                               </h4>
-                              <p className="text-sm font-mono text-veltora-gold-light mt-1 font-semibold leading-relaxed">
+                              <p className="text-xs sm:text-sm font-mono text-veltora-gold-light mt-1 font-semibold leading-relaxed">
                                 {(frontVph / 7200).toFixed(1)} Hz / {frontVph.toLocaleString()} VPH
                               </p>
-                              <p className="text-xs text-veltora-steel font-mono mt-3 leading-relaxed">
+                              <p className="text-[10px] sm:text-xs text-veltora-steel font-mono mt-1.5 sm:mt-3 leading-relaxed">
                                 {detail.desc}
                               </p>
                             </div>
                             {/* Back Face */}
                             <div className="card-face card-face-back">
-                              <span className="text-[10px] font-mono text-veltora-gold tracking-[0.2em] uppercase font-bold">
+                              <span className="text-[9px] sm:text-[10px] font-mono text-veltora-gold tracking-[0.2em] uppercase font-bold">
                                 SPECIFICATION 01 OF 05
                               </span>
-                              <h4 className="text-2xl font-display text-veltora-cream uppercase mt-2.5 tracking-wide">
+                              <h4 className="text-lg sm:text-2xl font-display text-veltora-cream uppercase mt-1.5 sm:mt-2.5 tracking-wide">
                                 Oscillation Frequency
                               </h4>
-                              <p className="text-sm font-mono text-veltora-gold-light mt-1 font-semibold leading-relaxed">
+                              <p className="text-xs sm:text-sm font-mono text-veltora-gold-light mt-1 font-semibold leading-relaxed">
                                 {(backVph / 7200).toFixed(1)} Hz / {backVph.toLocaleString()} VPH
                               </p>
-                              <p className="text-xs text-veltora-steel font-mono mt-3 leading-relaxed">
+                              <p className="text-[10px] sm:text-xs text-veltora-steel font-mono mt-1.5 sm:mt-3 leading-relaxed">
                                 {detail.desc}
                               </p>
                             </div>
@@ -1431,16 +1447,16 @@ export default function HomePage() {
 
                     return (
                       <div key={idx} className={`mechanism-detail-card ${cardState}`}>
-                        <span className="text-[10px] font-mono text-veltora-gold tracking-[0.2em] uppercase font-bold">
+                        <span className="text-[9px] sm:text-[10px] font-mono text-veltora-gold tracking-[0.2em] uppercase font-bold">
                           SPECIFICATION 0{idx + 1} OF 05
                         </span>
-                        <h4 className="text-2xl font-display text-veltora-cream uppercase mt-2.5 tracking-wide">
+                        <h4 className="text-lg sm:text-2xl font-display text-veltora-cream uppercase mt-1.5 sm:mt-2.5 tracking-wide">
                           {detail.label}
                         </h4>
-                        <p className="text-sm font-mono text-veltora-gold-light mt-1 font-semibold leading-relaxed">
+                        <p className="text-xs sm:text-sm font-mono text-veltora-gold-light mt-1 font-semibold leading-relaxed">
                           {detail.val}
                         </p>
-                        <p className="text-xs text-veltora-steel font-mono mt-3 leading-relaxed">
+                        <p className="text-[10px] sm:text-xs text-veltora-steel font-mono mt-1.5 sm:mt-3 leading-relaxed">
                           {detail.desc}
                         </p>
                       </div>

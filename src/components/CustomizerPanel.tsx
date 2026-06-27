@@ -148,9 +148,14 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
       <style dangerouslySetInnerHTML={{ __html: `
         .customizer-card-container {
           position: relative;
-          height: 520px;
+          height: 240px;
           width: 100%;
           overflow: visible;
+        }
+        @media (min-width: 768px) {
+          .customizer-card-container {
+            height: 520px;
+          }
         }
         .customizer-card {
           position: absolute;
@@ -162,11 +167,16 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
           backdrop-filter: blur(20px);
           border: 1px solid rgba(184, 161, 106, 0.18);
           border-radius: 12px;
-          padding: 24px;
+          padding: 16px;
           box-shadow: 0 15px 35px rgba(0,0,0,0.6);
           display: flex;
           flex-direction: column;
           justify-content: space-between;
+        }
+        @media (min-width: 640px) {
+          .customizer-card {
+            padding: 24px;
+          }
         }
         .card-hidden {
           opacity: 0;
@@ -180,19 +190,31 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
           transition: opacity 0.28s cubic-bezier(0.4, 0, 1, 1), transform 0.28s cubic-bezier(0.4, 0, 1, 1);
         }
         .card-previous {
-          opacity: 0.7; /* Dim previous card */
-          transform: translate3d(0, 0, 0) scale(1);
-          pointer-events: auto;
-          border-color: rgba(184, 161, 106, 0.1);
+          opacity: 0;
+          transform: translate3d(0, -90px, 0) scale(0.92);
+          pointer-events: none;
           transition: opacity 0.38s cubic-bezier(0.25, 1, 0.5, 1), transform 0.38s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        @media (min-width: 768px) {
+          .card-previous {
+            opacity: 0.7;
+            transform: translate3d(0, 0, 0) scale(1);
+            pointer-events: auto;
+            border-color: rgba(184, 161, 106, 0.1);
+          }
         }
         .card-active {
           opacity: 1;
-          transform: translate3d(0, 260px, 0) scale(1);
+          transform: translate3d(0, 0, 0) scale(1);
           pointer-events: auto;
           box-shadow: 0 0 30px rgba(207, 162, 64, 0.15);
           border-color: rgba(184, 161, 106, 0.35);
           transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1) 0.15s, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1) 0.15s;
+        }
+        @media (min-width: 768px) {
+          .card-active {
+            transform: translate3d(0, 260px, 0) scale(1);
+          }
         }
         .card-active-top {
           opacity: 1;
@@ -261,24 +283,24 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
             
             {/* CARD 0: CASE FINISH */}
             <div className={getCardClassName(0)}>
-              <span className="text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
+              <span className="text-[10px] sm:text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
                 01. CASE FINISH SELECTION
               </span>
-              <div className="grid grid-cols-2 gap-3 flex-1 mt-4 overflow-y-auto custom-scrollbar pr-1">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 mt-3 sm:mt-4 overflow-y-auto custom-scrollbar pr-1">
                 {CASE_OPTIONS.map((option) => (
                   <button
                     key={option.id}
                     onClick={() => handleCaseChange(option.id)}
-                    className={`group flex items-center gap-3 px-3.5 py-3.5 rounded-lg border text-left transition-all ${
+                    className={`group flex items-center gap-2 sm:gap-3 px-2 py-2 sm:px-3.5 sm:py-3.5 rounded-lg border text-left transition-all ${
                       caseFinish === option.id
                         ? 'border-veltora-gold bg-veltora-gold/5 shadow-[0_0_8px_rgba(207,162,64,0.08)]'
                         : 'border-veltora-gold/10 bg-veltora-obsidian/45 hover:border-veltora-gold/30'
                     }`}
                   >
-                    <span className="w-3.5 h-3.5 rounded-full border border-veltora-gold/20 flex-shrink-0" style={{ backgroundColor: option.color }} />
+                    <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border border-veltora-gold/20 flex-shrink-0" style={{ backgroundColor: option.color }} />
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-mono font-bold text-veltora-cream truncate leading-none">{option.label}</span>
-                      <span className="text-[9px] text-veltora-steel uppercase truncate mt-0.5 font-semibold">{option.desc}</span>
+                      <span className="text-[10px] sm:text-xs font-mono font-bold text-veltora-cream truncate leading-none">{option.label}</span>
+                      <span className="text-[8px] sm:text-[9px] text-veltora-steel uppercase truncate mt-0.5 font-semibold">{option.desc}</span>
                     </div>
                   </button>
                 ))}
@@ -287,22 +309,22 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
 
             {/* CARD 1: DIAL COLOR */}
             <div className={getCardClassName(1)}>
-              <span className="text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
+              <span className="text-[10px] sm:text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
                 02. BESPOKE DIAL LACQUER
               </span>
-              <div className="flex flex-wrap gap-3.5 flex-1 mt-4 overflow-y-auto custom-scrollbar">
+              <div className="flex flex-wrap gap-2 sm:gap-3.5 flex-1 mt-3 sm:mt-4 overflow-y-auto custom-scrollbar">
                 {DIAL_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleDialChange(option.value)}
-                    className={`group flex items-center gap-3 px-3.5 py-3 rounded-lg border text-left transition-all ${
+                    className={`group flex items-center gap-2 sm:gap-3 px-2.5 py-2 sm:px-3.5 sm:py-3 rounded-lg border text-left transition-all ${
                       dialColor === option.value
                         ? 'border-veltora-gold bg-veltora-gold/5 shadow-[0_0_8px_rgba(207,162,64,0.08)]'
                         : 'border-veltora-gold/10 bg-veltora-obsidian/45 hover:border-veltora-gold/30'
                     }`}
                   >
-                    <div className="w-4.5 h-4.5 rounded-full border border-white/10 transition-transform group-hover:scale-105" style={{ backgroundColor: option.value }} />
-                    <span className="text-xs font-mono font-bold text-veltora-cream">{option.label}</span>
+                    <div className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 rounded-full border border-white/10 transition-transform group-hover:scale-105" style={{ backgroundColor: option.value }} />
+                    <span className="text-[10px] sm:text-xs font-mono font-bold text-veltora-cream">{option.label}</span>
                   </button>
                 ))}
               </div>
@@ -310,15 +332,15 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
 
             {/* CARD 2: INDEX STYLE */}
             <div className={getCardClassName(2)}>
-              <span className="text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
+              <span className="text-[10px] sm:text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
                 03. INDEX MARKERS STYLE
               </span>
-              <div className="grid grid-cols-2 gap-3 mt-4.5 flex-1 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-3 sm:mt-4.5 flex-1 overflow-y-auto custom-scrollbar">
                 {INDEX_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleIndexChange(option.value)}
-                    className={`px-4 py-3.5 rounded-lg border text-xs font-mono text-center transition-all truncate ${
+                    className={`px-3 py-2.5 sm:px-4 sm:py-3.5 rounded-lg border text-[10px] sm:text-xs font-mono text-center transition-all truncate ${
                       indexStyle === option.value
                         ? 'border-veltora-gold bg-veltora-gold/5 text-veltora-gold font-bold shadow-[0_0_8px_rgba(207,162,64,0.08)]'
                         : 'border-veltora-gold/10 bg-veltora-obsidian/45 text-veltora-cream hover:border-veltora-gold/30'
@@ -332,21 +354,21 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
 
             {/* CARD 3: STRAP TYPE */}
             <div className={getCardClassName(3)}>
-              <span className="text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
+              <span className="text-[10px] sm:text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
                 04. BESPOKE STRAP SELECTOR
               </span>
-              <div className="grid grid-cols-3 gap-2.5 mt-4 flex-1 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5 mt-3 sm:mt-4 flex-1 overflow-y-auto custom-scrollbar">
                 {STRAP_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => handleStrapChange(option.value)}
-                    className={`group flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                    className={`group flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-lg border transition-all ${
                       strapType === option.value
                         ? 'border-veltora-gold bg-veltora-gold/5 shadow-[0_0_8px_rgba(207,162,64,0.08)]'
                         : 'border-veltora-gold/10 bg-veltora-obsidian/45 hover:border-veltora-gold/30'
                     }`}
                   >
-                    <div className="w-11 h-11 rounded-full overflow-hidden mb-2 border border-veltora-gold/10 relative flex-shrink-0">
+                    <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full overflow-hidden mb-1.5 sm:mb-2 border border-veltora-gold/10 relative flex-shrink-0">
                       <Image 
                         src={option.swatch} 
                         alt={option.label}
@@ -354,7 +376,7 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
                         className="object-cover group-hover:scale-105 transition-transform"
                       />
                     </div>
-                    <span className="text-[9px] font-mono text-veltora-cream text-center leading-none truncate w-full font-bold">
+                    <span className="text-[8px] sm:text-[9px] font-mono text-veltora-cream text-center leading-none truncate w-full font-bold">
                       {option.label}
                     </span>
                   </button>
@@ -364,13 +386,13 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
 
             {/* CARD 4: BESPOKE MECHANICS */}
             <div className={getCardClassName(4)}>
-              <span className="text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
+              <span className="text-[10px] sm:text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
                 05. BESPOKE MECHANICS CONTROLS
               </span>
-              <div className="space-y-3 mt-4 flex-1 overflow-y-auto custom-scrollbar pr-1">
+              <div className="space-y-2 sm:space-y-3 mt-3 sm:mt-4 flex-1 overflow-y-auto custom-scrollbar pr-1">
                 {/* Watch Explosion Slider */}
-                <div className="bg-veltora-obsidian/30 p-3 rounded-lg space-y-2 border border-veltora-gold/5">
-                  <div className="flex justify-between items-center text-xs font-mono">
+                <div className="bg-veltora-obsidian/30 p-2 sm:p-3 rounded-lg space-y-1.5 sm:space-y-2 border border-veltora-gold/5">
+                  <div className="flex justify-between items-center text-[10px] sm:text-xs font-mono">
                     <span className="text-veltora-cream font-bold">3D DECONSTRUCT VIEW</span>
                     <span className="text-veltora-gold font-bold">{Math.round(explodeProgress * 100)}%</span>
                   </div>
@@ -386,10 +408,10 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
                 </div>
 
                 {/* Dial X-Ray Mode */}
-                <div className="flex items-center justify-between bg-veltora-obsidian/30 p-3 rounded-lg border border-veltora-gold/5">
+                <div className="flex items-center justify-between bg-veltora-obsidian/30 p-2 sm:p-3 rounded-lg border border-veltora-gold/5">
                   <div className="space-y-0.5">
-                    <span className="block text-xs font-mono text-veltora-cream uppercase font-bold">DIAL X-RAY MODE</span>
-                    <span className="block text-[9px] text-veltora-steel font-mono leading-none">
+                    <span className="block text-[10px] sm:text-xs font-mono text-veltora-cream uppercase font-bold font-semibold">DIAL X-RAY MODE</span>
+                    <span className="block text-[8px] sm:text-[9px] text-veltora-steel font-mono leading-none">
                       Reveal inner rotating movement.
                     </span>
                   </div>
@@ -414,19 +436,19 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
 
             {/* CARD 5: ENGRAVING */}
             <div className={getCardClassName(5)}>
-              <span className="text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
+              <span className="text-[10px] sm:text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
                 06. CASEBACK ENGRAVING
               </span>
-              <div className="space-y-4 mt-4.5 flex-1">
+              <div className="space-y-3 sm:space-y-4 mt-3 sm:mt-4.5 flex-1">
                 <input
                   type="text"
                   maxLength={3}
                   value={initials}
                   onChange={(e) => setInitials(e.target.value)}
-                  className="w-full bg-veltora-obsidian border border-veltora-gold/20 focus:border-veltora-gold-light rounded-lg px-4 py-3 text-sm font-mono text-veltora-gold tracking-[0.25em] focus:outline-none uppercase font-bold"
+                  className="w-full bg-veltora-obsidian border border-veltora-gold/20 focus:border-veltora-gold-light rounded-lg px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm font-mono text-veltora-gold tracking-[0.25em] focus:outline-none uppercase font-bold"
                   placeholder="INITIALS (MAX 3)"
                 />
-                <p className="text-[10px] text-veltora-steel font-mono leading-relaxed mt-1.5 uppercase font-medium">
+                <p className="text-[9px] sm:text-[10px] text-veltora-steel font-mono leading-relaxed mt-1 sm:mt-1.5 uppercase font-medium">
                   Engraved live onto the back sapphire crystal center inside the Veltora Atelier Geneva.
                 </p>
               </div>
@@ -434,20 +456,20 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
 
             {/* CARD 6: VALUATION / RESERVE */}
             <div className={getCardClassName(6)}>
-              <span className="text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
+              <span className="text-[10px] sm:text-xs font-mono text-veltora-gold tracking-[0.15em] uppercase font-bold">
                 07. RESERVE COMMISSION
               </span>
-              <div className="space-y-4 mt-4 flex-1">
-                <div className="flex justify-between items-end bg-veltora-obsidian/30 p-3.5 rounded-lg border border-veltora-gold/5">
+              <div className="space-y-3 sm:space-y-4 mt-3 sm:mt-4 flex-1">
+                <div className="flex justify-between items-end bg-veltora-obsidian/30 p-2.5 sm:p-3.5 rounded-lg border border-veltora-gold/5">
                   <div>
-                    <span className="text-[9px] font-mono text-veltora-steel uppercase leading-none font-semibold">Total Price</span>
-                    <div className="text-2xl font-display font-bold text-veltora-gold leading-tight mt-1">
+                    <span className="text-[8px] sm:text-[9px] font-mono text-veltora-steel uppercase leading-none font-semibold">Total Price</span>
+                    <div className="text-lg sm:text-2xl font-display font-bold text-veltora-gold leading-tight mt-0.5 sm:mt-1">
                       CHF {totalPrice.toLocaleString()}
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-[9px] font-mono text-veltora-steel uppercase leading-none font-semibold">Deposit (20%)</span>
-                    <div className="text-sm font-mono text-veltora-cream leading-tight mt-1 font-bold">
+                    <span className="text-[8px] sm:text-[9px] font-mono text-veltora-steel uppercase leading-none font-semibold">Deposit (20%)</span>
+                    <div className="text-xs sm:text-sm font-mono text-veltora-cream leading-tight mt-0.5 sm:mt-1 font-bold">
                       CHF {(totalPrice * 0.20).toLocaleString()}
                     </div>
                   </div>
@@ -455,7 +477,7 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
 
                 <button
                   onClick={handleReserveClick}
-                  className="w-full bg-veltora-gold hover:bg-veltora-gold-light text-veltora-obsidian font-mono uppercase font-bold py-3.5 rounded-lg transition-all text-xs tracking-widest"
+                  className="w-full bg-veltora-gold hover:bg-veltora-gold-light text-veltora-obsidian font-mono uppercase font-bold py-2.5 sm:py-3.5 rounded-lg transition-all text-[10px] sm:text-xs tracking-widest"
                 >
                   Reserve Configuration
                 </button>
