@@ -1517,12 +1517,20 @@ export default function HomePage() {
           {/* Ambient background gold glow */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(207,162,64,0.02)_0%,transparent_75%)] pointer-events-none z-0" />
           
+          {/* Mobile Progress Bar (expanding symmetrically from center) */}
+          <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 w-48 h-[3px] rounded-full flex items-center justify-center lg:hidden z-20">
+            <div 
+              className="h-full bg-veltora-gold rounded-full transition-all duration-75 ease-out shadow-[0_0_10px_#cfa240,0_0_20px_#cfa240]"
+              style={{ width: `${collectionsScrollProgress * 100}%` }}
+            />
+          </div>
+          
           <div className="w-full">
             <div 
               ref={collectionsTrackRef}
               style={{
                 transform: `translateX(-${collectionsScrollProgress * collectionsTrackWidth}px)`,
-                paddingLeft: "calc((100vw - 1280px) / 2 + 48px)"
+                paddingLeft: "max(24px, calc((100vw - 1280px) / 2 + 48px))"
               }}
               className="flex items-center gap-12 select-none w-max will-change-transform pr-[20vw] z-10 relative"
             >
