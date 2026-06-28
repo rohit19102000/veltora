@@ -60,11 +60,12 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
   const setExplodeProgress = useStore((state) => state.setExplodeProgress);
   const setXRayMode = useStore((state) => state.setXRayMode);
   const setCertificateOpen = useStore((state) => state.setCertificateOpen);
+  const currentStep = useStore((state) => state.currentStep);
+  const setCurrentStep = useStore((state) => state.setCurrentStep);
 
   const lastWindingProgress = useRef(0);
 
   // Discrete Step Transitions State
-  const [currentStep, setCurrentStep] = useState(0);
   const [exitingStep, setExitingStep] = useState<number | null>(null);
 
   // Synchronize activeStep with scrollProgress discretely
@@ -81,7 +82,7 @@ export default function CustomizerPanel({ scrollProgress = 0 }: CustomizerPanelP
       }, 550);
       return () => clearTimeout(timer);
     }
-  }, [scrollProgress, currentStep]);
+  }, [scrollProgress, currentStep, setCurrentStep]);
 
   const handleCaseChange = (value: WatchConfig['caseFinish']) => {
     audioController.playClasp();

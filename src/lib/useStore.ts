@@ -18,6 +18,8 @@ interface CustomizerState extends WatchConfig {
   xRayMode: boolean;
   escapementVph: number;
   isCertificateOpen: boolean;
+  currentStep: number;
+  setCurrentStep: (step: number) => void;
   setCaseFinish: (finish: WatchConfig['caseFinish']) => void;
   setDialColor: (color: string) => void;
   setIndexStyle: (style: WatchConfig['indexStyle']) => void;
@@ -69,6 +71,8 @@ export const useStore = create<CustomizerState>((set, get) => ({
   xRayMode: false,
   escapementVph: 28800,
   isCertificateOpen: false,
+  currentStep: 0,
+  setCurrentStep: (step) => set({ currentStep: step }),
 
   setCaseFinish: (finish) => {
     set({ caseFinish: finish });

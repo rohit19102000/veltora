@@ -2,7 +2,7 @@
 
 import React, { useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Center } from '@react-three/drei';
+import { OrbitControls, Center, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useStore } from '@/lib/useStore';
 
@@ -44,6 +44,12 @@ function WatchModel() {
   const explodeProgress = useStore((state) => state.explodeProgress);
   const xRayMode = useStore((state) => state.xRayMode);
   const escapementVph = useStore((state) => state.escapementVph);
+  const currentStep = useStore((state) => state.currentStep);
+
+  const fontUrl = useMemo(() => {
+    if (typeof window === 'undefined') return undefined;
+    return window.location.origin + '/assets/GeistVF.woff';
+  }, []);
 
   const groupRef = useRef<THREE.Group>(null);
   const hourHandRef = useRef<THREE.Group>(null);
@@ -68,14 +74,26 @@ function WatchModel() {
     }
   }, [strapType]);
 
-  // Dynamic Caseback Canvas for initials engraving
-  const canvasTexture = useMemo(() => {
-    if (typeof window === 'undefined') return null;
+  // Dynamic Caseback Canvas for initials engraving (using persistent texture)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const textureRef = useRef<THREE.CanvasTexture | null>(null);
+
+  if (typeof window !== 'undefined' && !canvasRef.current) {
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
+    canvasRef.current = canvas;
+    textureRef.current = new THREE.CanvasTexture(canvas);
+  }
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const texture = textureRef.current;
+    if (!canvas || !texture) return;
+
     const ctx = canvas.getContext('2d');
     if (ctx) {
+      // Clear canvas
       ctx.fillStyle = '#0A0A0B';
       ctx.fillRect(0, 0, 256, 256);
       
@@ -94,24 +112,18 @@ function WatchModel() {
 
       // Engraved initials
       ctx.fillStyle = '#E8D5A3';
-      ctx.font = 'bold 48px Cormorant Garamond, serif';
-      ctx.fillText(initials || 'V-9', 128, 140);
+      ctx.font = 'bold 44px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(initials || 'V-9', 128, 132);
 
+      // SWISS MADE tag
       ctx.fillStyle = '#8A8E96';
-      ctx.font = '14px monospace';
-      ctx.fillText('300 HOURS · SWISS MADE', 128, 190);
+      ctx.font = '12px monospace';
+      ctx.fillText('300 HOURS · SWISS MADE', 128, 195);
     }
-    const texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true;
-    return texture;
   }, [initials]);
-
-  // Update canvas texture on change
-  useEffect(() => {
-    if (canvasTexture) {
-      canvasTexture.needsUpdate = true;
-    }
-  }, [initials, canvasTexture]);
 
   // Case Finish PBR properties
   const caseMatProps = useMemo(() => {
@@ -139,25 +151,31 @@ function WatchModel() {
     const hz = escapementVph / 3600; // e.g. 8 for 28800 vph
     const gearSpeed = (escapementVph / 28800) * 0.015;
     if (gear1Ref.current) {
-      gear1Ref.current.rotation.z += gearSpeed;
+      gear1Ref.current.rotation.y += gearSpeed;
     }
     if (gear2Ref.current) {
-      gear2Ref.current.rotation.z -= gearSpeed * 0.7;
+      gear2Ref.current.rotation.y -= gearSpeed * 0.7;
     }
     if (balanceWheelRef.current) {
       // Oscillate balance wheel back and forth at the watch frequency
-      balanceWheelRef.current.rotation.z = Math.sin(date.getTime() * 0.001 * Math.PI * hz) * 0.8;
+      balanceWheelRef.current.rotation.y = Math.sin(date.getTime() * 0.001 * Math.PI * hz) * 0.8;
     }
 
     // Auto rotate case slowly when not hovered (interacted with)
     if (groupRef.current) {
-      if (explodeProgress === 0) {
+      if (currentStep === 5) {
+        // Engraving step: Rotate watch 180 degrees around X-axis so Caseback faces camera directly
+        groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, Math.PI, 0.08);
+        // Keep it stationary so it's easy to read initials
+        groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.08);
+      } else if (explodeProgress === 0) {
+        // Normal rotating view
         groupRef.current.rotation.y += 0.003;
-        groupRef.current.rotation.x = 0;
+        groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 0, 0.08);
       } else {
         // Tilt watch for cinematic 3D perspective during explosion
-        groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 40 * Math.PI / 180, 0.1);
-        groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 25 * Math.PI / 180, 0.1);
+        groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 40 * Math.PI / 180, 0.08);
+        groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, 25 * Math.PI / 180, 0.08);
       }
     }
   });
@@ -213,15 +231,15 @@ function WatchModel() {
       </group>
 
       {/* 2. MAIN WATCH HEAD */}
-      {/* Case Outer Ring */}
+      {/* Case Outer Ring (Hollow Torus) */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[2.0, 2.0, 0.5, 64]} />
+        <torusGeometry args={[1.85, 0.15, 16, 64]} />
         <meshStandardMaterial {...caseMatProps} />
       </mesh>
 
-      {/* Bezel */}
-      <mesh position={[0, 0.26 + explodeProgress * 1.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[1.9, 1.9, 0.08, 64]} />
+      {/* Bezel (Hollow Torus) */}
+      <mesh position={[0, 0.24 + explodeProgress * 1.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.82, 0.06, 16, 64]} />
         <meshStandardMaterial {...caseMatProps} roughness={0.1} />
       </mesh>
 
@@ -248,19 +266,25 @@ function WatchModel() {
       </mesh>
 
       {/* 3. CASEBACK WITH ENGRAVING */}
-      <mesh position={[0, -0.26 - explodeProgress * 1.5, 0]} rotation={[Math.PI / 2, 0, Math.PI]}>
+      {/* Solid Caseback Cylinder for depth */}
+      <mesh position={[0, -0.26 - explodeProgress * 1.5, 0]} rotation={[0, 0, 0]}>
         <cylinderGeometry args={[1.85, 1.85, 0.04, 64]} />
-        <meshStandardMaterial map={canvasTexture || undefined} roughness={0.3} metalness={0.8} />
+        <meshStandardMaterial {...caseMatProps} />
+      </mesh>
+      {/* Flat Engraving Plate at bottom cap */}
+      <mesh position={[0, -0.281 - explodeProgress * 1.5, 0]} rotation={[Math.PI / 2, 0, Math.PI]}>
+        <circleGeometry args={[1.85, 64]} />
+        <meshBasicMaterial map={textureRef.current || undefined} side={THREE.DoubleSide} />
       </mesh>
       {/* 4. DIAL AND REVEALS */}
       {indexStyle !== 'skeleton' ? (
-        <mesh position={[0, 0.2 + explodeProgress * 0.8, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.2 + explodeProgress * 0.8, 0]} rotation={[0, 0, 0]}>
           <cylinderGeometry args={[1.8, 1.8, 0.04, 64]} />
           <meshStandardMaterial 
             color={dialColor} 
             roughness={0.1} 
             metalness={dialColor === '#0A0A0B' ? 0.8 : 0.2} 
-            transparent={xRayMode}
+            transparent={true}
             opacity={xRayMode ? 0.15 : 1}
           />
         </mesh>
@@ -268,7 +292,7 @@ function WatchModel() {
         // Skeleton view: glass base showing inner gears
         <group position={[0, explodeProgress * 0.8, 0]}>
           {/* Clear center */}
-          <mesh position={[0, 0.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh position={[0, 0.2, 0]} rotation={[0, 0, 0]}>
             <cylinderGeometry args={[1.8, 1.8, 0.02, 64]} />
             <meshPhysicalMaterial 
               color="#ffffff" 
@@ -290,13 +314,13 @@ function WatchModel() {
       {(xRayMode || indexStyle === 'skeleton') && (
         <group position={[0, explodeProgress * 0.8, 0]}>
           {/* Gear 1: Gold center/drive gear */}
-          <mesh ref={gear1Ref} position={[0.4, 0.12, -0.4]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh ref={gear1Ref} position={[0.4, 0.12, -0.4]} rotation={[0, 0, 0]}>
             <cylinderGeometry args={[0.6, 0.6, 0.04, 24]} />
             <meshStandardMaterial color="#B8A16A" metalness={0.9} roughness={0.2} />
           </mesh>
 
           {/* Gear 2: Silver intermediate transmission gear */}
-          <mesh ref={gear2Ref} position={[-0.4, 0.10, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh ref={gear2Ref} position={[-0.4, 0.10, 0.2]} rotation={[0, 0, 0]}>
             <cylinderGeometry args={[0.75, 0.75, 0.04, 30]} />
             <meshStandardMaterial color="#C4C6CB" metalness={0.9} roughness={0.2} />
           </mesh>
@@ -321,15 +345,15 @@ function WatchModel() {
           </group>
 
           {/* Ruby Pivots / Jewel Bearings */}
-          <mesh position={[0.4, 0.14, -0.4]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh position={[0.4, 0.14, -0.4]} rotation={[0, 0, 0]}>
             <cylinderGeometry args={[0.12, 0.12, 0.05, 12]} />
             <meshStandardMaterial color="#E0115F" metalness={0.4} roughness={0.05} emissive="#E0115F" emissiveIntensity={0.6} />
           </mesh>
-          <mesh position={[-0.4, 0.12, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh position={[-0.4, 0.12, 0.2]} rotation={[0, 0, 0]}>
             <cylinderGeometry args={[0.12, 0.12, 0.05, 12]} />
             <meshStandardMaterial color="#E0115F" metalness={0.4} roughness={0.05} emissive="#E0115F" emissiveIntensity={0.6} />
           </mesh>
-          <mesh position={[0, 0.11, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <mesh position={[0, 0.11, 0]} rotation={[0, 0, 0]}>
             <cylinderGeometry args={[0.14, 0.14, 0.05, 12]} />
             <meshStandardMaterial color="#E0115F" metalness={0.4} roughness={0.05} emissive="#E0115F" emissiveIntensity={0.7} />
           </mesh>
@@ -350,11 +374,18 @@ function WatchModel() {
               />
             </mesh>
           ) : (
-            // Small placeholder indicator dot for text indices
-            <mesh position={[0, 0, 0.1]}>
-              <sphereGeometry args={[0.04, 8, 8]} />
-              <meshStandardMaterial color="#E8D5A3" />
-            </mesh>
+            <Text
+              position={[0, 0.03, 0]}
+              rotation={[-Math.PI / 2, 0, 0]}
+              fontSize={0.18}
+              color="#E8D5A3"
+              font={fontUrl}
+              anchorX="center"
+              anchorY="middle"
+              depthOffset={-1}
+            >
+              {marker.text}
+            </Text>
           )}
         </group>
       ))}
@@ -386,14 +417,14 @@ function WatchModel() {
         </group>
 
         {/* Center Pin */}
-        <mesh position={[0, 0.03, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <mesh position={[0, 0.03, 0]} rotation={[0, 0, 0]}>
           <cylinderGeometry args={[0.12, 0.12, 0.08, 16]} />
           <meshStandardMaterial color="#E8D5A3" metalness={0.9} />
         </mesh>
       </group>
 
       {/* 6. SAPPHIRE CRYSTAL GLASS */}
-      <mesh position={[0, 0.32 + explodeProgress * 2.0, 0]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh position={[0, 0.32 + explodeProgress * 2.0, 0]} rotation={[0, 0, 0]}>
         <cylinderGeometry args={[1.82, 1.82, 0.02, 64]} />
         <meshPhysicalMaterial 
           color="#E6F2FF" 
@@ -451,7 +482,7 @@ export default function WatchCanvas({ onHoverStateChange }: WatchCanvasProps) {
           minDistance={3} 
           maxDistance={10}
           enablePan={false}
-          maxPolarAngle={Math.PI / 2 - 0.05} // prevent going below horizon
+          maxPolarAngle={Math.PI} // allow rotating underneath the watch to see the caseback
         />
       </Canvas>
     </div>

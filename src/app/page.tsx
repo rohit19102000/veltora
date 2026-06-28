@@ -951,7 +951,7 @@ export default function HomePage() {
                 className="absolute inset-0 transition-transform duration-75 ease-out"
                 style={{
                   transform: `translateY(${craftScrollProgress * 50}px) translateX(${-craftScrollProgress * 50}px) rotate(${craftScrollProgress * 6}deg) scale(${0.44 - craftScrollProgress * 0.03})`,
-                  opacity: craftScrollProgress > 0.02 ? 1 : 0
+                  opacity: craftScrollProgress >= 0.03 ? 1 : 0
                 }}
               >
                 <Image 
@@ -967,7 +967,8 @@ export default function HomePage() {
               <div 
                 className="absolute inset-0 transition-transform duration-75 ease-out"
                 style={{
-                  transform: `translateY(${craftScrollProgress * 20}px) translateX(${-craftScrollProgress * 20}px) rotate(${-craftScrollProgress * 3}deg) scale(0.5)`
+                  transform: `translateY(${craftScrollProgress * 20}px) translateX(${-craftScrollProgress * 20}px) rotate(${-craftScrollProgress * 3}deg) scale(0.5)`,
+                  opacity: craftScrollProgress >= 0.03 ? 1 : 0
                 }}
               >
                 <Image 
@@ -979,32 +980,34 @@ export default function HomePage() {
                 />
               </div>
 
-              {/* Layer 5: Dial Face */}
+              {/* Layer 5: Sapphire Crystal Glass */}
               <div 
                 className="absolute inset-0 transition-transform duration-75 ease-out"
                 style={{
-                  transform: `translateY(${-craftScrollProgress * 50}px) translateX(${craftScrollProgress * 50}px) rotate(${-craftScrollProgress * 5}deg) scale(${0.44 + craftScrollProgress * 0.03})`
+                  transform: `translateY(${-craftScrollProgress * 50}px) translateX(${craftScrollProgress * 50}px) rotate(${-craftScrollProgress * 5}deg) scale(${0.44 + craftScrollProgress * 0.03})`,
+                  opacity: craftScrollProgress >= 0.03 ? 1 : 0
                 }}
               >
                 <Image 
-                  src="/assets/watch_dial_layer.png" 
-                  alt="Watch Dial" 
+                  src="/assets/watch_crystal_layer.png" 
+                  alt="Sapphire Crystal" 
                   fill 
                   className="object-contain"
                   style={{ mixBlendMode: 'screen' }}
                 />
               </div>
 
-              {/* Layer 6: Sapphire Crystal Glass */}
+              {/* Layer 6: Dial Face */}
               <div 
                 className="absolute inset-0 transition-transform duration-75 ease-out"
                 style={{
-                  transform: `translateY(${-craftScrollProgress * 110}px) translateX(${craftScrollProgress * 110}px) rotate(${craftScrollProgress * 10}deg) scale(${0.45 + craftScrollProgress * 0.08})`
+                  transform: `translateY(${-craftScrollProgress * 110}px) translateX(${craftScrollProgress * 110}px) rotate(${craftScrollProgress * 10}deg) scale(${0.45 + craftScrollProgress * 0.08})`,
+                  opacity: craftScrollProgress >= 0.03 ? 1 : 0
                 }}
               >
                 <Image 
-                  src="/assets/watch_crystal_layer.png" 
-                  alt="Sapphire Crystal" 
+                  src="/assets/watch_dial_layer.png" 
+                  alt="Watch Dial" 
                   fill 
                   className="object-contain"
                   style={{ mixBlendMode: 'screen' }}
